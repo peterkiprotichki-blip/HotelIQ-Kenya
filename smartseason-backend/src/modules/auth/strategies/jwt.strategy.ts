@@ -8,7 +8,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET || 'bomapro-secret-change-me',
+      secretOrKey: process.env.JWT_SECRET || 'smartseason-secret-change-me',
     });
   }
 

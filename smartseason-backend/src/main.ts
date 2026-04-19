@@ -19,8 +19,8 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Bomapro API')
-    .setDescription('Rental Management System API for the Kenyan Market')
+    .setTitle('SmartSeason API')
+    .setDescription('Field Monitoring API for SmartSeason')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
@@ -29,7 +29,7 @@ async function bootstrap() {
 
   const port = process.env.PORT || 3400;
   await app.listen(port);
-  console.log(`Bomapro API running on port ${port}`);
+  console.log(`SmartSeason API running on port ${port}`);
   console.log(`Swagger docs available at http://localhost:${port}/docs`);
 }
 bootstrap();

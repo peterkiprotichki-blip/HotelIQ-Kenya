@@ -16,6 +16,11 @@ interface UserFormModel {
   tenantIds: string[];
 }
 
+interface RoleOption {
+  value: UserRole;
+  label: string;
+}
+
 @Component({
   selector: 'app-users-list',
   templateUrl: './users-list.component.html',
@@ -32,7 +37,10 @@ export class UsersListComponent implements OnInit {
   editingUser: BomoproUser | null = null;
   selectedUserForPermissions: BomoproUser | null = null;
   organizations: Tenant[] = [];
-  roles: UserRole[] = ['super_admin', 'admin', 'manager', 'agent'];
+  roleOptions: RoleOption[] = [
+    { value: 'admin', label: 'Admin (Coordinator)' },
+    { value: 'agent', label: 'Field Agent' },
+  ];
   permissionsData: PermissionsResponse | null = null;
   permissionDraft: string[] = [];
 
@@ -78,7 +86,7 @@ export class UsersListComponent implements OnInit {
       name: user.name,
       email: user.email,
       phone: user.phone || '',
-      role: user.role,
+      role: this.normalizeRole(user.role),
       password: '',
       isActive: user.isActive,
       tenantIds: [...(user.tenantIds || [])],
@@ -95,7 +103,7 @@ export class UsersListComponent implements OnInit {
       return;
     }
 
-    if (this.userForm.role !== 'super_admin' && !this.userForm.tenantIds.length && this.organizations.length) {
+    if (!this.userForm.tenantIds.length && this.organizations.length) {
       return;
     }
 
@@ -202,12 +210,22 @@ export class UsersListComponent implements OnInit {
 
   getRoleClasses(role: string): string {
     const map: Record<string, string> = {
-      super_admin: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
       admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
-      manager: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
       agent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
     };
-    return map[role] || '';
+    return map[role] || 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-200';
+  }
+
+  getRoleLabel(role: string): string {
+    if (role === 'admin') {
+      return 'Admin (Coordinator)';
+    }
+
+    if (role === 'agent') {
+      return 'Field Agent';
+    }
+
+    return role.replace('_', ' ');
   }
 
   private createEmptyForm(): UserFormModel {
@@ -220,6 +238,14 @@ export class UsersListComponent implements OnInit {
       isActive: true,
       tenantIds: this.getDefaultTenantIds(),
     };
+  }
+
+  private normalizeRole(role: string): UserRole {
+    if (role === 'admin' || role === 'agent') {
+      return role;
+    }
+
+    return 'agent';
   }
 
   private getDefaultTenantIds(): string[] {

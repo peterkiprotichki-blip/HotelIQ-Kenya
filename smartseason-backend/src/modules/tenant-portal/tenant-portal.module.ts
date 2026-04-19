@@ -26,7 +26,7 @@ import { Unit, UnitSchema } from '../units/schemas/unit.schema';
     PassportModule,
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.TENANT_PORTAL_JWT_SECRET || process.env.JWT_SECRET || 'bomapro-portal-secret',
+        secret: process.env.TENANT_PORTAL_JWT_SECRET || process.env.JWT_SECRET || 'smartseason-portal-secret',
         signOptions: { expiresIn: '7d' },
       }),
     }),

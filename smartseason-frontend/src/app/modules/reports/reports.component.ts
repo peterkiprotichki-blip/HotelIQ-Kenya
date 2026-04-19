@@ -1,9 +1,11 @@
 import { Component, OnDestroy, OnInit } from '@angular/core';
-import { forkJoin } from 'rxjs';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { Chart, registerables } from 'chart.js';
 import { ThemeService } from '../../shared/services/theme/theme.service';
 import { Field, FieldsService, FieldStats } from '../../shared/services/fields/fields.service';
 import { AuthService } from '../../shared/services/auth/auth.service';
+import { UsersService } from '../../shared/services/users/users.service';
+import { BomoproUser } from '../../shared/interfaces/models';
 
 Chart.register(...registerables);
 
@@ -16,6 +18,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
   stats: FieldStats | null = null;
   fields: Field[] = [];
   agentBreakdown: Array<{ agentId: string; count: number }> = [];
+  agentNameMap: Record<string, string> = {};
   loading = true;
   error = '';
 
@@ -26,6 +29,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
   constructor(
     private fieldsService: FieldsService,
     private authService: AuthService,
+    private usersService: UsersService,
     public themeService: ThemeService,
   ) {}
 
@@ -46,10 +50,15 @@ export class ReportsComponent implements OnInit, OnDestroy {
     forkJoin({
       stats: this.fieldsService.getStats(),
       fields: this.fieldsService.getAll(),
+      agents: this.usersService.getAll(1, 200).pipe(
+        map((res) => (res.data || []).filter((user) => user.role === 'agent' && user.isActive)),
+        catchError(() => of([] as BomoproUser[])),
+      ),
     }).subscribe({
-      next: ({ stats, fields }) => {
+      next: ({ stats, fields, agents }) => {
         this.stats = stats;
         this.fields = fields;
+        this.agentNameMap = this.buildAgentNameMap(agents);
         this.agentBreakdown = this.buildAgentBreakdown(fields);
         this.loading = false;
         setTimeout(() => {
@@ -83,6 +92,30 @@ export class ReportsComponent implements OnInit, OnDestroy {
     return Array.from(map.entries())
       .map(([agentId, count]) => ({ agentId, count }))
       .sort((a, b) => b.count - a.count);
+  }
+
+  private buildAgentNameMap(agents: BomoproUser[]): Record<string, string> {
+    const map: Record<string, string> = {};
+    agents.forEach((agent) => {
+      if (agent._id) {
+        map[agent._id] = agent.name || 'Unknown Agent';
+      }
+    });
+
+    const currentUser = this.authService.getUser();
+    if (currentUser?._id && currentUser?.name && !map[currentUser._id]) {
+      map[currentUser._id] = currentUser.name;
+    }
+
+    return map;
+  }
+
+  private getAgentLabel(agentId: string): string {
+    if (agentId === 'unassigned') {
+      return 'Unassigned';
+    }
+
+    return this.agentNameMap[agentId] || 'Unknown Agent';
   }
 
   private isDark(): boolean {
@@ -174,7 +207,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
     this.agentChart = new Chart(canvas, {
       type: 'bar',
       data: {
-        labels: topAgents.map((a) => a.agentId),
+        labels: topAgents.map((a) => this.getAgentLabel(a.agentId)),
         datasets: [{
           data: topAgents.map((a) => a.count),
           backgroundColor: this.themeService.accent + 'cc',

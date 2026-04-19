@@ -25,11 +25,11 @@ export class SidebarComponent implements OnInit, OnDestroy {
   @Output() navigate = new EventEmitter<void>();
 
   allNavItems: NavItem[] = [
-    { label: 'Dashboard', icon: 'fas fa-th-large', route: '/dashboard', roles: ['super_admin', 'admin', 'manager', 'agent', 'tenant'] },
-    { label: 'Fields', icon: 'fas fa-seedling', route: '/fields', roles: ['super_admin', 'admin', 'manager', 'agent'] },
-    { label: 'Reports', icon: 'fas fa-chart-bar', route: '/reports', roles: ['super_admin', 'admin', 'manager'] },
-    { label: 'Users', icon: 'fas fa-users-cog', route: '/users', roles: ['super_admin', 'admin'] },
-    { label: 'Settings', icon: 'fas fa-cog', route: '/settings', roles: ['super_admin', 'admin'] },
+    { label: 'Dashboard', icon: 'fas fa-th-large', route: '/dashboard', roles: ['admin', 'agent'] },
+    { label: 'Fields', icon: 'fas fa-seedling', route: '/fields', roles: ['admin', 'agent'] },
+    { label: 'Reports', icon: 'fas fa-chart-bar', route: '/reports', roles: ['admin'] },
+    { label: 'Users', icon: 'fas fa-users-cog', route: '/users', roles: ['admin'] },
+    { label: 'Settings', icon: 'fas fa-cog', route: '/settings', roles: ['admin'] },
   ];
 
   navItems: NavItem[] = [];

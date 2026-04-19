@@ -59,7 +59,7 @@ export class FieldsComponent implements OnInit {
   }
 
   get isAdminLike(): boolean {
-    return ['super_admin', 'admin', 'manager'].includes(this.userRole);
+    return this.userRole === 'admin';
   }
 
   openCreateFieldModal(): void {

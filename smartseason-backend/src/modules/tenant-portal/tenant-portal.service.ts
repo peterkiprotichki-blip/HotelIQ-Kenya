@@ -425,18 +425,18 @@ export class TenantPortalService {
 
   async sendPortalInviteEmail(to: string, name: string, inviteLink: string) {
     await this.mailer.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
+      from: `"SmartSeason" <${process.env.SMTP_USER}>`,
       to,
       subject: 'You have been added — Access your Tenant Portal',
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f8fafc;border-radius:12px;">
           <div style="text-align:center;margin-bottom:24px;">
             <div style="display:inline-block;width:50px;height:50px;background:#059669;border-radius:12px;line-height:50px;color:white;font-size:22px;">🏠</div>
-            <h1 style="color:#1e293b;margin-top:10px;font-size:22px;">Bomapro Tenant Portal</h1>
+            <h1 style="color:#1e293b;margin-top:10px;font-size:22px;">SmartSeason Tenant Portal</h1>
           </div>
           <div style="background:white;border-radius:12px;padding:28px;border:1px solid #e2e8f0;">
             <h2 style="color:#1e293b;margin-top:0;">Welcome, ${name}!</h2>
-            <p style="color:#475569;line-height:1.7;">Your property manager has added you to the Bomapro system. You can now access your Tenant Portal to:</p>
+            <p style="color:#475569;line-height:1.7;">Your field coordinator has added you to the SmartSeason system. You can now access your Tenant Portal to:</p>
             <ul style="color:#475569;line-height:1.9;">
               <li>View and sign your lease agreement</li>
               <li>Make rent payments via M-Pesa</li>
@@ -448,7 +448,7 @@ export class TenantPortalService {
             </div>
             <p style="color:#94a3b8;font-size:12px;">This link is valid for 7 days. If you didn't expect this email, you can safely ignore it.</p>
           </div>
-          <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:20px;">&copy; ${new Date().getFullYear()} Bomapro. All rights reserved.</p>
+          <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:20px;">&copy; ${new Date().getFullYear()} SmartSeason. All rights reserved.</p>
         </div>`,
     });
   }
@@ -468,14 +468,14 @@ export class TenantPortalService {
   ) {
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:4200';
     await this.mailer.sendMail({
-      from: `"Bomapro" <${process.env.SMTP_USER}>`,
+      from: `"SmartSeason" <${process.env.SMTP_USER}>`,
       to,
       subject: `Payment Successful — KES ${data.amount.toLocaleString()} Receipt`,
       html: `
         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:30px;background:#f8fafc;border-radius:12px;">
           <div style="text-align:center;margin-bottom:24px;">
             <div style="display:inline-block;width:50px;height:50px;background:#059669;border-radius:12px;line-height:50px;color:white;font-size:22px;">🏠</div>
-            <h1 style="color:#1e293b;margin-top:10px;font-size:22px;">Bomapro</h1>
+            <h1 style="color:#1e293b;margin-top:10px;font-size:22px;">SmartSeason</h1>
           </div>
           <div style="background:white;border-radius:12px;padding:28px;border:1px solid #e2e8f0;">
             <div style="text-align:center;margin-bottom:20px;">
@@ -496,7 +496,7 @@ export class TenantPortalService {
               <a href="${frontendUrl}/tenant-portal/invoices" style="display:inline-block;padding:10px 28px;background:#059669;color:white;text-decoration:none;border-radius:8px;font-size:13px;">View All Invoices</a>
             </div>
           </div>
-          <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:20px;">&copy; ${new Date().getFullYear()} Bomapro. All rights reserved.</p>
+          <p style="text-align:center;color:#94a3b8;font-size:12px;margin-top:20px;">&copy; ${new Date().getFullYear()} SmartSeason. All rights reserved.</p>
         </div>`,
     });
   }

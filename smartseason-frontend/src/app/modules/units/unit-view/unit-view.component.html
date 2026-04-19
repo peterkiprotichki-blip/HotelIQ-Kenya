@@ -1,0 +1,138 @@
+<div *ngIf="isOpen" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-2 sm:p-4 modal-backdrop" [@fadeIn]>
+  <div class="bg-white dark:bg-slate-800 rounded-lg sm:rounded-xl shadow-lg w-full mx-2 max-w-sm sm:max-w-2xl max-h-[90vh] overflow-y-auto modal-content border border-gray-200 dark:border-slate-700" [@slideDown]>
+    <!-- Header -->
+    <div class="sticky top-0 z-10 flex items-center justify-between p-3 sm:p-4 border-b border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800">
+      <h2 class="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Unit Details</h2>
+      <button (click)="closeModal()" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors">
+        <i class="fas fa-times text-lg"></i>
+      </button>
+    </div>
+
+    <!-- Content -->
+    <div *ngIf="unit" class="p-2 sm:p-3 md:p-4 space-y-2">
+      <!-- Unit Name & Status -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Unit Name</label>
+          <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{{ unit.unitNumber }}</p>
+        </div>
+        <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Status</label>
+          <span class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium gap-1 sm:gap-2" [ngClass]="getStatusColor(unit.status)">
+            <i [class]="getStatusIcon(unit.status)"></i>
+            <span>{{ unit.status | titlecase }}</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- Unit Type & Floor -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Unit Type</label>
+          <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{{ getUnitTypeLabel(unit.unitType) }}</p>
+        </div>
+        <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Floor</label>
+          <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{{ getFloorLabel(unit.floor) }}</p>
+        </div>
+      </div>
+
+      <!-- Rent Amount & Security Deposit -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Rent Amount</label>
+          <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{{ unit.currency || 'KES' }} {{ unit.rentAmount | number }}</p>
+        </div>
+        <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Security Deposit</label>
+          <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{{ unit.currency || 'KES' }} {{ unit.securityDeposit | number }}</p>
+        </div>
+      </div>
+
+      <!-- Rent Cycle -->
+      <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Rent Cycle</label>
+        <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100">{{ unit.rentCycle | titlecase }}</p>
+      </div>
+
+      <!-- Description -->
+      <div *ngIf="unit.description" class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+        <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Description</label>
+        <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100">{{ unit.description }}</p>
+      </div>
+
+      <!-- Utilities Section -->
+      <div class="border-t border-gray-200 dark:border-slate-700 pt-3 mt-3">
+        <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">Utilities & Meters</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Electricity Meter</label>
+            <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100">{{ unit.electricityMeterNumber || 'N/A' }}</p>
+          </div>
+          <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Water Meter</label>
+            <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100">{{ unit.waterMeterNumber || 'N/A' }}</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Property Information -->
+      <div *ngIf="property && !loading" class="border-t border-gray-200 dark:border-slate-700 pt-3 mt-3">
+        <h3 class="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">Property Information</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Property</label>
+            <p class="text-xs sm:text-sm font-medium text-gray-900 dark:text-gray-100">{{ property.name }}</p>
+          </div>
+          <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Address</label>
+            <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100">{{ property.address }}</p>
+          </div>
+          <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Floors</label>
+            <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100">{{ property.floors || 0 }}</p>
+          </div>
+          <div class="p-2 sm:p-3 rounded-lg bg-gray-50 dark:bg-slate-700/50">
+            <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-1">Type</label>
+            <p class="text-xs sm:text-sm text-gray-900 dark:text-gray-100 capitalize">{{ property.type }}</p>
+          </div>
+        </div>
+
+        <!-- Amenities -->
+        <div *ngIf="property.amenities && property.amenities.length > 0" class="mt-2">
+          <label class="block text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wide mb-2">Amenities</label>
+          <div class="flex flex-wrap gap-1 sm:gap-2">
+            <span *ngFor="let amenity of property.amenities" class="inline-flex items-center px-2 sm:px-3 py-1 rounded-full text-xs font-medium" 
+              [style.background-color]="themeService.accent + '20'"
+              [style.color]="themeService.accent"
+            >
+              {{ amenity }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Loading indicator -->
+      <div *ngIf="loading" class="flex items-center justify-center py-4">
+        <i class="fas fa-spinner fa-spin text-lg" [style.color]="themeService.accent"></i>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 p-3 sm:p-4 flex gap-2 sm:gap-3 justify-end">
+      <button
+        (click)="closeModal()"
+        class="px-3 sm:px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700 font-medium text-xs sm:text-sm transition-colors"
+      >
+        Close
+      </button>
+      <button
+        (click)="onEdit()"
+        class="px-3 sm:px-4 py-2 rounded-lg text-white font-medium text-xs sm:text-sm transition-all"
+        [style.background-color]="themeService.accent"
+      >
+        <i class="fas fa-edit mr-1 sm:mr-2"></i><span class="hidden sm:inline">Edit</span><span class="sm:hidden">Edit</span>
+      </button>
+    </div>
+  </div>
+</div>

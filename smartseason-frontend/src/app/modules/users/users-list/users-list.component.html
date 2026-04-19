@@ -1,0 +1,307 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Users</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">Create users with role-based defaults, manage organization access, and fine-tune permissions from the list.</p>
+    </div>
+
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+      <div class="relative min-w-0 sm:min-w-[260px]">
+        <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-xs text-gray-400"></i>
+        <input
+          type="text"
+          [(ngModel)]="search"
+          (keyup.enter)="onSearch()"
+          placeholder="Search users"
+          class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-9 pr-3 text-sm text-gray-900 outline-none transition-colors dark:border-slate-700 dark:bg-slate-800 dark:text-gray-100"
+        />
+      </div>
+
+      <button (click)="onSearch()" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors dark:border-slate-600 dark:text-gray-200">
+        <i class="fas fa-filter text-xs"></i>
+        Filter
+      </button>
+
+      <button (click)="openCreate()" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" [style.background-color]="themeService.accent">
+        <i class="fas fa-user-plus text-xs"></i>
+        New User
+      </button>
+    </div>
+  </div>
+
+  <div *ngIf="loading" class="flex items-center justify-center py-20">
+    <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
+  </div>
+
+  <div *ngIf="!loading && users.length" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:block">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+        <thead class="bg-gray-50 dark:bg-slate-900/60">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">User</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Role</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Organizations</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Status</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Permissions</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
+          <tr *ngFor="let user of users; trackBy: trackByUser" class="align-top">
+            <td class="px-4 py-4">
+              <div class="flex min-w-0 items-start gap-3">
+                <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white" [style.background-color]="themeService.accent">
+                  {{ user.name.charAt(0).toUpperCase() || '?' }}
+                </div>
+                <div class="min-w-0">
+                  <p class="truncate text-sm font-semibold text-gray-900 dark:text-gray-100">{{ user.name }}</p>
+                  <p class="truncate text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+                  <p class="truncate text-xs text-gray-400 dark:text-gray-500">{{ user.phone || 'No phone' }}</p>
+                </div>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="rounded-full px-2.5 py-1 text-xs font-medium" [ngClass]="getRoleClasses(user.role)">{{ user.role | titlecase }}</span>
+            </td>
+            <td class="px-4 py-4">
+              <div *ngIf="user.role === 'super_admin'" class="inline-flex rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">
+                Access to all organizations
+              </div>
+              <div *ngIf="user.role !== 'super_admin' && getUserOrganizations(user).length" class="flex flex-wrap gap-2">
+                <span *ngFor="let organization of getUserOrganizations(user) | slice:0:3" class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-slate-700 dark:text-gray-200">
+                  {{ organization.name }}
+                </span>
+                <span *ngIf="getUserOrganizations(user).length > 3" class="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500 dark:bg-slate-900 dark:text-gray-400">
+                  +{{ getUserOrganizations(user).length - 3 }} more
+                </span>
+              </div>
+              <p *ngIf="user.role !== 'super_admin' && !getUserOrganizations(user).length" class="text-sm text-gray-500 dark:text-gray-400">No organizations linked</p>
+            </td>
+            <td class="px-4 py-4">
+              <span *ngIf="user.isApproved === false" class="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
+              <span *ngIf="user.isApproved !== false && user.isActive" class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+              <span *ngIf="user.isApproved !== false && !user.isActive" class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">Inactive</span>
+            </td>
+            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">{{ user.permissions.length || 0 }} assigned</td>
+            <td class="px-4 py-4">
+              <div class="flex flex-wrap justify-end gap-2">
+                <button *ngIf="user.isApproved === false" (click)="approve(user._id)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-green-300 text-green-600 transition-colors hover:bg-green-50 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950/30" title="Approve user">
+                  <i class="fas fa-check text-xs"></i>
+                </button>
+                <button *ngIf="user.isApproved === false" (click)="reject(user._id)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-yellow-300 text-yellow-600 transition-colors hover:bg-yellow-50 dark:border-yellow-800 dark:text-yellow-400 dark:hover:bg-yellow-950/30" title="Reject user">
+                  <i class="fas fa-ban text-xs"></i>
+                </button>
+                <button (click)="openEdit(user)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700" title="Edit user">
+                  <i class="fas fa-pen text-xs"></i>
+                </button>
+                <button (click)="openPermissionsModal(user)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700" title="Manage permissions">
+                  <i class="fas fa-user-shield text-xs"></i>
+                </button>
+                <button (click)="deleteUser(user._id)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-300 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/70 dark:text-red-400 dark:hover:bg-red-950/30" title="Delete user">
+                  <i class="fas fa-trash text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && users.length" class="grid grid-cols-1 gap-4 lg:hidden xl:grid-cols-2">
+    <article *ngFor="let user of users; trackBy: trackByUser" class="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-5">
+      <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div class="flex min-w-0 items-start gap-3">
+          <div class="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-2xl text-sm font-semibold text-white" [style.background-color]="themeService.accent">
+            {{ user.name.charAt(0).toUpperCase() || '?' }}
+          </div>
+
+          <div class="min-w-0 space-y-2">
+            <div>
+              <h2 class="truncate text-base font-semibold text-gray-900 dark:text-gray-100">{{ user.name }}</h2>
+              <p class="truncate text-sm text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+            </div>
+
+            <div class="flex flex-wrap gap-2">
+              <span class="rounded-full px-2.5 py-1 text-xs font-medium" [ngClass]="getRoleClasses(user.role)">{{ user.role | titlecase }}</span>
+              <span *ngIf="user.isApproved === false" class="rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400">Pending</span>
+              <span *ngIf="user.isApproved !== false && user.isActive" class="rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">Active</span>
+              <span *ngIf="user.isApproved !== false && !user.isActive" class="rounded-full bg-red-100 px-2.5 py-1 text-xs font-medium text-red-700 dark:bg-red-900/30 dark:text-red-400">Inactive</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex flex-wrap gap-2 sm:justify-end">
+          <button (click)="openEdit(user)" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700" title="Edit user">
+            <i class="fas fa-pen text-xs"></i>
+          </button>
+          <button (click)="openPermissionsModal(user)" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700" title="Manage permissions">
+            <i class="fas fa-user-shield text-xs"></i>
+          </button>
+          <button (click)="deleteUser(user._id)" class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-red-300 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/70 dark:text-red-400 dark:hover:bg-red-950/30" title="Delete user">
+            <i class="fas fa-trash text-xs"></i>
+          </button>
+        </div>
+      </div>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <div class="rounded-xl bg-gray-50 px-3 py-3 dark:bg-slate-900/60">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Phone</p>
+          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ user.phone || 'Not set' }}</p>
+        </div>
+
+        <div class="rounded-xl bg-gray-50 px-3 py-3 dark:bg-slate-900/60">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Permissions</p>
+          <p class="mt-1 text-sm text-gray-700 dark:text-gray-200">{{ user.permissions.length || 0 }} assigned</p>
+        </div>
+      </div>
+
+      <div class="mt-4 rounded-xl border border-dashed border-gray-200 px-3 py-3 dark:border-slate-700">
+        <div class="mb-2 flex items-center justify-between gap-3">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Organizations</p>
+          <span *ngIf="user.role === 'super_admin'" class="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">Access to all organizations</span>
+        </div>
+
+        <div *ngIf="getUserOrganizations(user).length; else noOrganizations" class="flex flex-wrap gap-2">
+          <span *ngFor="let organization of getUserOrganizations(user)" class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-slate-700 dark:text-gray-200">
+            {{ organization.name }}
+          </span>
+        </div>
+
+        <ng-template #noOrganizations>
+          <p class="text-sm text-gray-500 dark:text-gray-400">No organizations linked.</p>
+        </ng-template>
+      </div>
+
+      <div *ngIf="user.isApproved === false" class="mt-4 flex flex-col gap-2 sm:flex-row">
+        <button (click)="approve(user._id)" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" [style.background-color]="themeService.accent">
+          <i class="fas fa-check text-xs"></i>
+          Approve
+        </button>
+        <button (click)="reject(user._id)" class="inline-flex flex-1 items-center justify-center gap-2 rounded-xl border border-red-300 px-4 py-2.5 text-sm font-medium text-red-600 dark:border-red-800 dark:text-red-400">
+          <i class="fas fa-ban text-xs"></i>
+          Reject
+        </button>
+      </div>
+    </article>
+  </div>
+
+  <div *ngIf="!loading && !users.length" class="rounded-2xl border border-dashed border-gray-300 bg-white px-6 py-14 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-400">
+    <i class="fas fa-user-friends mb-3 block text-3xl"></i>
+    <p>No users found for this organization.</p>
+  </div>
+
+  <div *ngIf="showUserForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">{{ editingUser ? 'Edit User' : 'Create User' }}</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Role-based permissions are assigned automatically. Use the permissions icon after saving to customize them.</p>
+        </div>
+        <button (click)="showUserForm = false" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 text-gray-500 dark:border-slate-600 dark:text-gray-300">
+          <i class="fas fa-times text-xs"></i>
+        </button>
+      </div>
+
+      <div class="mt-6 grid gap-4 md:grid-cols-2">
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Name *</label>
+          <input type="text" [(ngModel)]="userForm.name" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100" />
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Email *</label>
+          <input type="email" [(ngModel)]="userForm.email" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100" />
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+          <input type="text" [(ngModel)]="userForm.phone" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100" />
+        </div>
+
+        <div>
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">Role *</label>
+          <select [(ngModel)]="userForm.role" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100">
+            <option *ngFor="let role of roles" [value]="role">{{ role | titlecase }}</option>
+          </select>
+        </div>
+
+        <div class="md:col-span-2">
+          <label class="mb-1.5 block text-sm font-medium text-gray-700 dark:text-gray-300">{{ editingUser ? 'New Password' : 'Password *' }}</label>
+          <input type="password" [(ngModel)]="userForm.password" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100" />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ editingUser ? 'Leave blank to keep the current password.' : 'Set the user password during creation.' }}</p>
+        </div>
+      </div>
+
+      <div class="mt-5 flex items-center gap-2 rounded-xl bg-gray-50 px-3 py-3 dark:bg-slate-900/60">
+        <input type="checkbox" [(ngModel)]="userForm.isActive" id="user-active" class="rounded border-gray-300 dark:border-slate-600" />
+        <label for="user-active" class="text-sm text-gray-700 dark:text-gray-300">User can access the app</label>
+      </div>
+
+      <div class="mt-6">
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Organization Access</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Link the user to one or more organizations from this list.</p>
+          </div>
+          <span *ngIf="userForm.role === 'super_admin'" class="rounded-full bg-red-100 px-2.5 py-1 text-[11px] font-semibold text-red-700 dark:bg-red-900/30 dark:text-red-400">Super admins can access all organizations</span>
+        </div>
+
+        <div *ngIf="organizations.length; else noOrganizationOptions" class="grid gap-3 sm:grid-cols-2">
+          <label *ngFor="let organization of organizations" class="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 px-3 py-3 transition-colors dark:border-slate-700" [class.opacity-60]="userForm.role === 'super_admin'">
+            <input
+              type="checkbox"
+              [checked]="isOrganizationSelected(organization._id) || userForm.role === 'super_admin'"
+              (change)="toggleOrganization(organization._id)"
+              [disabled]="userForm.role === 'super_admin'"
+              class="mt-1 rounded border-gray-300 dark:border-slate-600"
+            />
+            <span class="min-w-0">
+              <span class="block truncate text-sm font-medium text-gray-800 dark:text-gray-100">{{ organization.name }}</span>
+              <span class="block truncate text-xs text-gray-500 dark:text-gray-400">{{ organization.slug }}</span>
+            </span>
+          </label>
+        </div>
+
+        <ng-template #noOrganizationOptions>
+          <p class="rounded-xl border border-dashed border-gray-300 px-4 py-4 text-sm text-gray-500 dark:border-slate-700 dark:text-gray-400">No organizations are available yet. Create one first from the Organizations page.</p>
+        </ng-template>
+      </div>
+
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button (click)="showUserForm = false" class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-slate-600 dark:text-gray-300">Cancel</button>
+        <button (click)="saveUser()" [disabled]="savingUser" class="rounded-xl px-5 py-2.5 text-sm font-medium text-white" [style.background-color]="themeService.accent" [class.opacity-50]="savingUser">
+          {{ savingUser ? 'Saving...' : (editingUser ? 'Update User' : 'Create User') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showPermissions && selectedUserForPermissions && permissionsData" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="w-full max-w-3xl rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-slate-700 dark:bg-slate-800 sm:p-6 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-900 dark:text-gray-100">Permissions</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ selectedUserForPermissions.name }} can be granted extra permissions beyond the role defaults here.</p>
+        </div>
+        <button (click)="showPermissions = false" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 text-gray-500 dark:border-slate-600 dark:text-gray-300">
+          <i class="fas fa-times text-xs"></i>
+        </button>
+      </div>
+
+      <div class="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <label *ngFor="let permission of permissionsData.all" class="flex cursor-pointer items-center gap-3 rounded-xl border border-gray-200 px-3 py-3 text-sm text-gray-700 transition-colors dark:border-slate-700 dark:text-gray-200">
+          <input type="checkbox" [checked]="permissionDraft.includes(permission)" (change)="togglePermission(permission)" class="rounded border-gray-300 dark:border-slate-600" />
+          <span class="break-all">{{ permission }}</span>
+        </label>
+      </div>
+
+      <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+        <button (click)="showPermissions = false" class="rounded-xl border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 dark:border-slate-600 dark:text-gray-300">Cancel</button>
+        <button (click)="savePermissions()" [disabled]="savingPermissions" class="rounded-xl px-5 py-2.5 text-sm font-medium text-white" [style.background-color]="themeService.accent" [class.opacity-50]="savingPermissions">
+          {{ savingPermissions ? 'Saving...' : 'Save Permissions' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

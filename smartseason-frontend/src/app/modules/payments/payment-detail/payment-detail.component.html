@@ -1,0 +1,75 @@
+<div *ngIf="loading" class="flex items-center justify-center py-20">
+  <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
+</div>
+
+<div *ngIf="!loading && payment">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <button (click)="goBack()" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-slate-600 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700">
+        <i class="fas fa-arrow-left text-sm"></i>
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Payment Details</h1>
+        <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusClasses(payment.status)">{{ payment.status }}</span>
+      </div>
+    </div>
+    <div class="flex gap-2">
+      <button *ngIf="payment.status === 'pending'" (click)="markCompleted()" class="px-4 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent">
+        <i class="fas fa-check mr-1"></i> Mark Completed
+      </button>
+      <button (click)="deletePayment()" class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20">
+        <i class="fas fa-trash mr-1"></i> Delete
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Info -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Payment Information</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div><span class="text-gray-500 dark:text-gray-400 block">Property</span><a [routerLink]="['/properties', payment.propertyId]" class="font-medium hover:underline" [style.color]="themeService.accent">{{ payment.propertyName }}</a></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Tenant</span><a [routerLink]="['/tenants', payment.propertyTenantId]" class="font-medium hover:underline" [style.color]="themeService.accent">{{ payment.propertyTenantName }}</a></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Payment Date</span><span class="text-gray-800 dark:text-gray-100">{{ payment.paymentDate | date:'d MMM y':'+0300' }}</span><ng-container *ngIf="(payment.paymentDate | date:'HH:mm':'UTC') !== '00:00'"><span class="text-sm text-gray-500 dark:text-gray-400 ml-1">{{ payment.paymentDate | date:'HH:mm':'+0300' }}</span></ng-container></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Payment Period</span><span class="text-gray-800 dark:text-gray-100">{{ payment.paymentPeriod || '—' }}</span></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Type</span><span class="text-gray-800 dark:text-gray-100 capitalize">{{ payment.paymentType }}</span></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Method</span><span class="text-gray-800 dark:text-gray-100 capitalize">{{ payment.paymentMethod }}</span></div>
+        <div *ngIf="payment.receiptNumber"><span class="text-gray-500 dark:text-gray-400 block">Receipt #</span><span class="text-gray-800 dark:text-gray-100">{{ payment.receiptNumber }}</span></div>
+        <div *ngIf="payment.recordedBy"><span class="text-gray-500 dark:text-gray-400 block">Recorded By</span><span class="text-gray-800 dark:text-gray-100">{{ payment.recordedBy }}</span></div>
+      </div>
+
+      <!-- M-Pesa Details -->
+      <div *ngIf="payment.mpesaTransactionId" class="mt-4 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+        <h3 class="text-sm font-semibold text-green-700 dark:text-green-400 mb-2">M-Pesa Details</h3>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div><span class="text-green-600 dark:text-green-400 block">Transaction ID</span><span class="text-green-800 dark:text-green-100">{{ payment.mpesaTransactionId }}</span></div>
+          <div><span class="text-green-600 dark:text-green-400 block">Phone</span><span class="text-green-800 dark:text-green-100">{{ payment.mpesaPhoneNumber }}</span></div>
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div *ngIf="payment.bankReference" class="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <h3 class="text-sm font-semibold text-blue-700 dark:text-blue-400 mb-2">Bank Transfer</h3>
+        <div class="text-sm"><span class="text-blue-600 dark:text-blue-400 block">Reference</span><span class="text-blue-800 dark:text-blue-100">{{ payment.bankReference }}</span></div>
+      </div>
+
+      <div *ngIf="payment.notes" class="mt-4">
+        <span class="text-gray-500 dark:text-gray-400 block text-sm">Notes</span>
+        <p class="text-sm text-gray-800 dark:text-gray-100">{{ payment.notes }}</p>
+      </div>
+    </div>
+
+    <!-- Amount Summary -->
+    <div class="space-y-4">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Amount</div>
+        <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ payment.currency }} {{ payment.amount | number }}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Recorded</div>
+        <div class="text-sm font-medium text-gray-800 dark:text-gray-100">{{ payment.createdAt | date:'medium' }}</div>
+      </div>
+    </div>
+  </div>
+</div>

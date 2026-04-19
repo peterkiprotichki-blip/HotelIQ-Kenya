@@ -1,0 +1,27 @@
+{
+  "name": "smartseason",
+  "version": "1.0.0",
+  "description": "SmartSeason - Field Monitoring System",
+  "private": true,
+  "scripts": {
+    "install:all": "npm install && cd smartseason-backend && npm install && cd ../smartseason-frontend && npm install",
+    "start:backend": "cd smartseason-backend && npm run dev",
+    "start:frontend": "cd smartseason-frontend && npm start",
+    "build:backend": "cd smartseason-backend && npm run build",
+    "build:frontend": "cd smartseason-frontend && npm run build",
+    "test:backend": "cd smartseason-backend && npm test",
+    "test:frontend": "cd smartseason-frontend && npm test"
+  },
+  "keywords": [
+    "agriculture",
+    "field-monitoring",
+    "crop-tracking",
+    "farming"
+  ],
+  "author": "SmartSeason Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/smartseason.git"
+  }
+}

@@ -1,0 +1,202 @@
+@use "@ngneat/hot-toast/src/styles/styles.scss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ─── Accent color CSS variables (defaults = Emerald/Green for Bomapro) ─── */
+:root {
+  font-family: "Lexend", sans-serif;
+  --accent-50: #ecfdf5;
+  --accent-100: #d1fae5;
+  --accent-200: #a7f3d0;
+  --accent-300: #6ee7b7;
+  --accent-400: #34d399;
+  --accent-500: #10b981;
+  --accent-600: #059669;
+  --accent-700: #047857;
+  --accent-800: #065f46;
+  --accent-900: #064e3b;
+}
+
+/* ─── Light mode body ─── */
+body {
+  @apply bg-gray-50 text-gray-900 m-0 p-0 transition-colors duration-200;
+}
+
+/* ─── Dark mode body ─── */
+.dark body {
+  @apply bg-slate-900 text-gray-100;
+}
+
+/* ─── Scrollbar ─── */
+.scrollbar-hide::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+::-webkit-scrollbar {
+  width: 3px;
+}
+
+::-webkit-scrollbar-track {
+  background: white;
+}
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
+
+::-webkit-scrollbar-thumb {
+  background: darkgray;
+  border-radius: 50px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+/* ─── Property status badges ─── */
+.badge {
+  @apply px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+.badge-available { @apply bg-green-100 text-green-800; }
+.badge-occupied { @apply bg-blue-100 text-blue-800; }
+.badge-maintenance { @apply bg-yellow-100 text-yellow-800; }
+.badge-unavailable { @apply bg-gray-100 text-gray-800; }
+
+.dark .badge-available { @apply bg-green-900/40 text-green-300; }
+.dark .badge-occupied { @apply bg-blue-900/40 text-blue-300; }
+.dark .badge-maintenance { @apply bg-yellow-900/40 text-yellow-300; }
+.dark .badge-unavailable { @apply bg-gray-700 text-gray-300; }
+
+/* ─── Lease status badges ─── */
+.badge-draft { @apply bg-gray-100 text-gray-600; }
+.badge-active { @apply bg-green-100 text-green-800; }
+.badge-expired { @apply bg-red-100 text-red-600; }
+.badge-terminated { @apply bg-orange-100 text-orange-600; }
+
+.dark .badge-draft { @apply bg-gray-700 text-gray-300; }
+.dark .badge-active { @apply bg-green-900/40 text-green-300; }
+.dark .badge-expired { @apply bg-red-900/40 text-red-300; }
+.dark .badge-terminated { @apply bg-orange-900/40 text-orange-300; }
+
+/* ─── Payment status badges ─── */
+.badge-pending { @apply bg-yellow-100 text-yellow-800; }
+.badge-completed { @apply bg-green-100 text-green-800; }
+.badge-failed { @apply bg-red-100 text-red-600; }
+.badge-refunded { @apply bg-purple-100 text-purple-600; }
+
+.dark .badge-pending { @apply bg-yellow-900/40 text-yellow-300; }
+.dark .badge-completed { @apply bg-green-900/40 text-green-300; }
+.dark .badge-failed { @apply bg-red-900/40 text-red-300; }
+.dark .badge-refunded { @apply bg-purple-900/40 text-purple-300; }
+
+/* ─── Severity badges ─── */
+.severity-low { @apply bg-gray-100 text-gray-600; }
+.severity-medium { @apply bg-blue-100 text-blue-600; }
+.severity-high { @apply bg-orange-100 text-orange-600; }
+.severity-critical { @apply bg-red-100 text-red-600; }
+
+.dark .severity-low { @apply bg-gray-700 text-gray-300; }
+.dark .severity-medium { @apply bg-blue-900/40 text-blue-300; }
+.dark .severity-high { @apply bg-orange-900/40 text-orange-300; }
+.dark .severity-critical { @apply bg-red-900/40 text-red-300; }
+
+/* ─── Buttons ─── */
+.btn-primary {
+  @apply text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors;
+  background-color: var(--accent-600);
+  &:hover { background-color: var(--accent-700); }
+}
+.btn-secondary {
+  @apply bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-300 transition-colors;
+}
+.dark .btn-secondary {
+  @apply bg-slate-700 text-gray-200 hover:bg-slate-600;
+}
+.btn-danger {
+  @apply bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-700 transition-colors;
+}
+.btn-success {
+  @apply bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-700 transition-colors;
+}
+
+/* ─── Card ─── */
+.card {
+  @apply bg-white rounded-xl shadow-sm border border-gray-200 p-5 transition-colors duration-200;
+}
+.dark .card {
+  @apply bg-slate-800 border-slate-700;
+}
+
+/* ─── Form inputs ─── */
+.form-input {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none transition-colors;
+  &:focus {
+    border-color: var(--accent-500);
+    box-shadow: 0 0 0 2px var(--accent-100);
+  }
+}
+.dark .form-input {
+  @apply bg-slate-700 border-slate-600 text-gray-100;
+  &:focus {
+    box-shadow: 0 0 0 2px var(--accent-900);
+  }
+}
+.form-label {
+  @apply block text-sm font-medium text-gray-700 mb-1;
+}
+.dark .form-label {
+  @apply text-gray-300;
+}
+.form-textarea {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none transition-colors resize-none;
+  &:focus {
+    border-color: var(--accent-500);
+    box-shadow: 0 0 0 2px var(--accent-100);
+  }
+}
+.dark .form-textarea {
+  @apply bg-slate-700 border-slate-600 text-gray-100;
+}
+.form-select {
+  @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm outline-none bg-white;
+  &:focus {
+    border-color: var(--accent-500);
+    box-shadow: 0 0 0 2px var(--accent-100);
+  }
+}
+.dark .form-select {
+  @apply bg-slate-700 border-slate-600 text-gray-100;
+}
+
+/* ─── Table styles ─── */
+.table-container {
+  @apply relative;
+}
+.table-container table {
+  @apply w-full text-sm;
+}
+.table-container thead tr {
+  @apply bg-gray-50 border-b border-gray-200;
+}
+.dark .table-container thead tr {
+  @apply bg-slate-800 border-slate-700;
+}
+.table-container th {
+  @apply text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider;
+}
+.dark .table-container th {
+  @apply text-gray-400;
+}
+.table-container td {
+  @apply px-4 py-3 text-sm text-gray-700;
+}
+.dark .table-container td {
+  @apply text-gray-300;
+}
+.table-container tbody tr {
+  @apply border-b border-gray-100 hover:bg-gray-50 transition-colors;
+}
+.dark .table-container tbody tr {
+  @apply border-slate-700 hover:bg-slate-700/50;
+}
+

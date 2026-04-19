@@ -1,0 +1,68 @@
+<div *ngIf="loading" class="flex items-center justify-center py-20">
+  <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
+</div>
+
+<div *ngIf="!loading && damage">
+  <!-- Header -->
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div class="flex items-center gap-3">
+      <button (click)="goBack()" class="w-8 h-8 rounded-lg border border-gray-300 dark:border-slate-600 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-slate-700">
+        <i class="fas fa-arrow-left text-sm"></i>
+      </button>
+      <div>
+        <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Damage Report</h1>
+        <div class="flex gap-2 mt-1">
+          <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusClasses(damage.status)">{{ damage.status }}</span>
+          <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getSeverityClasses(damage.severity)">{{ damage.severity }}</span>
+        </div>
+      </div>
+    </div>
+    <button (click)="deleteDamage()" class="px-4 py-2 rounded-lg border border-red-300 text-red-600 text-sm hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20">
+      <i class="fas fa-trash mr-1"></i> Delete
+    </button>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Details -->
+    <div class="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">Details</h2>
+      <div class="mb-4">
+        <span class="text-gray-500 dark:text-gray-400 block text-sm">Description</span>
+        <p class="text-sm text-gray-800 dark:text-gray-100">{{ damage.description }}</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+        <div><span class="text-gray-500 dark:text-gray-400 block">Property</span><a [routerLink]="['/properties', damage.propertyId]" class="font-medium hover:underline" [style.color]="themeService.accent">{{ damage.propertyName }}</a></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Tenant</span><a [routerLink]="['/tenants', damage.propertyTenantId]" class="font-medium hover:underline" [style.color]="themeService.accent">{{ damage.propertyTenantName }}</a></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Damage Type</span><span class="text-gray-800 dark:text-gray-100 capitalize">{{ damage.damageType }}</span></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Location</span><span class="text-gray-800 dark:text-gray-100">{{ damage.location || '—' }}</span></div>
+        <div><span class="text-gray-500 dark:text-gray-400 block">Reported</span><span class="text-gray-800 dark:text-gray-100">{{ damage.reportedDate | date:'mediumDate' }}</span></div>
+        <div *ngIf="damage.assessedDate"><span class="text-gray-500 dark:text-gray-400 block">Assessed</span><span class="text-gray-800 dark:text-gray-100">{{ damage.assessedDate | date:'mediumDate' }}</span></div>
+        <div *ngIf="damage.repairedDate"><span class="text-gray-500 dark:text-gray-400 block">Repaired</span><span class="text-gray-800 dark:text-gray-100">{{ damage.repairedDate | date:'mediumDate' }}</span></div>
+        <div *ngIf="damage.repairVendor"><span class="text-gray-500 dark:text-gray-400 block">Repair Vendor</span><span class="text-gray-800 dark:text-gray-100">{{ damage.repairVendor }}</span></div>
+        <div *ngIf="damage.reportedBy"><span class="text-gray-500 dark:text-gray-400 block">Reported By</span><span class="text-gray-800 dark:text-gray-100">{{ damage.reportedBy }}</span></div>
+      </div>
+      <div *ngIf="damage.notes" class="mt-4">
+        <span class="text-gray-500 dark:text-gray-400 block text-sm">Notes</span>
+        <p class="text-sm text-gray-800 dark:text-gray-100">{{ damage.notes }}</p>
+      </div>
+    </div>
+
+    <!-- Cost Summary -->
+    <div class="space-y-4">
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Estimated Cost</div>
+        <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ damage.currency }} {{ damage.estimatedCost | number }}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Actual Cost</div>
+        <div class="text-2xl font-bold text-gray-800 dark:text-gray-100">{{ damage.currency }} {{ damage.actualCost | number }}</div>
+      </div>
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+        <div class="text-sm text-gray-500 dark:text-gray-400">Deducted from Deposit</div>
+        <div class="text-sm font-medium" [ngClass]="damage.deductedFromDeposit ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'">
+          {{ damage.deductedFromDeposit ? 'Yes' : 'No' }}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

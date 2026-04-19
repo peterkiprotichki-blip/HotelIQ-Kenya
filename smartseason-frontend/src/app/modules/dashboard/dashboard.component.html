@@ -1,0 +1,67 @@
+<div class="space-y-6">
+  <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Field Monitoring Dashboard</h1>
+    <span class="text-sm text-gray-500 dark:text-gray-400">Role: {{ roleLabel }}</span>
+  </div>
+
+  <div *ngIf="loading" class="py-12 text-center text-gray-500 dark:text-gray-400">
+    <i class="fas fa-spinner fa-spin mr-2"></i>Loading field insights...
+  </div>
+
+  <div *ngIf="error" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <ng-container *ngIf="!loading && stats">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Total Fields</p>
+        <p class="mt-1 text-3xl font-bold text-gray-800 dark:text-gray-100">{{ stats.totalFields }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Active</p>
+        <p class="mt-1 text-3xl font-bold text-green-600 dark:text-green-400">{{ stats.statusBreakdown.active }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-sm text-gray-500 dark:text-gray-400">At Risk</p>
+        <p class="mt-1 text-3xl font-bold text-orange-600 dark:text-orange-400">{{ stats.statusBreakdown.atRisk }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-sm text-gray-500 dark:text-gray-400">Completed</p>
+        <p class="mt-1 text-3xl font-bold text-blue-600 dark:text-blue-400">{{ stats.statusBreakdown.completed }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Field Stage Breakdown</h3>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between"><span>Planted</span><span class="font-semibold">{{ stats.stageBreakdown.planted }}</span></div>
+          <div class="flex justify-between"><span>Growing</span><span class="font-semibold">{{ stats.stageBreakdown.growing }}</span></div>
+          <div class="flex justify-between"><span>Ready</span><span class="font-semibold">{{ stats.stageBreakdown.ready }}</span></div>
+          <div class="flex justify-between"><span>Harvested</span><span class="font-semibold">{{ stats.stageBreakdown.harvested }}</span></div>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Insights</h3>
+        <ul class="list-disc space-y-2 pl-5 text-sm text-gray-700 dark:text-gray-200">
+          <li *ngIf="stats.statusBreakdown.atRisk > 0">{{ stats.statusBreakdown.atRisk }} field(s) need immediate attention.</li>
+          <li *ngIf="stats.statusBreakdown.atRisk === 0">No at-risk fields right now.</li>
+          <li *ngIf="isAgent">You only see fields assigned to you.</li>
+          <li *ngIf="!isAgent">You can assign fields to agents and monitor all updates.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div *ngIf="stats.atRiskFields.length" class="rounded-xl border border-orange-200 bg-orange-50 p-5 dark:border-orange-900/40 dark:bg-orange-900/10">
+      <h3 class="mb-2 text-sm font-semibold text-orange-700 dark:text-orange-300">At-Risk Fields</h3>
+      <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
+        <div *ngFor="let field of stats.atRiskFields" class="rounded-lg border border-orange-200 bg-white px-3 py-2 text-sm dark:border-orange-900/40 dark:bg-slate-800">
+          <p class="font-semibold text-gray-800 dark:text-gray-100">{{ field.name }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ field.cropType }} · {{ field.currentStage }}</p>
+        </div>
+      </div>
+    </div>
+  </ng-container>
+</div>

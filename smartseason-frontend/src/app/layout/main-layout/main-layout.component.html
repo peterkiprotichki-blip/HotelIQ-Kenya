@@ -1,0 +1,30 @@
+<div class="flex h-screen overflow-hidden bg-gray-50 dark:bg-slate-900 transition-colors duration-200">
+  <!-- Mobile backdrop -->
+  <div
+    *ngIf="isMobile && !mobileSidebarHidden"
+    class="fixed inset-0 bg-black/50 z-30 lg:hidden"
+    (click)="closeMobileSidebar()"
+  ></div>
+
+  <!-- Sidebar -->
+  <app-sidebar
+    [collapsed]="sidebarCollapsed"
+    [mobileHidden]="mobileSidebarHidden"
+    [isMobile]="isMobile"
+    (toggle)="toggleSidebar()"
+    (navigate)="onNavigate()"
+  ></app-sidebar>
+
+  <!-- Main Content -->
+  <div class="flex-1 flex flex-col overflow-hidden transition-all duration-300"
+    [ngClass]="getMainContentClass()"
+  >
+    <!-- Header -->
+    <app-header (toggleSidebar)="toggleSidebar()"></app-header>
+
+    <!-- Page Content -->
+    <main class="flex-1 overflow-y-auto p-2 sm:p-4 md:p-6">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

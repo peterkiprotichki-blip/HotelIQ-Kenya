@@ -1,0 +1,276 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Organizations</h1>
+      <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage organizations, review their members, and link existing users directly from each card.</p>
+    </div>
+    <button (click)="openForm()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent">
+      <i class="fas fa-plus"></i> New Organization
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="flex items-center justify-center py-20">
+    <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
+  </div>
+
+  <div *ngIf="!loading && tenants.length" class="hidden overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-slate-700 dark:bg-slate-800 lg:block">
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+        <thead class="bg-gray-50 dark:bg-slate-900/60">
+          <tr>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Organization</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Plan</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Limits</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Members</th>
+            <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Status</th>
+            <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-200 dark:divide-slate-700">
+          <tr *ngFor="let t of tenants" class="align-top">
+            <td class="px-4 py-4">
+              <div>
+                <p class="text-sm font-semibold text-gray-900 dark:text-gray-100">{{ t.name }}</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">{{ t.slug }}</p>
+                <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t.contactEmail || 'No contact email' }}</p>
+              </div>
+            </td>
+            <td class="px-4 py-4">
+              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getPlanClasses(t.plan)">{{ t.plan }}</span>
+            </td>
+            <td class="px-4 py-4 text-sm text-gray-700 dark:text-gray-200">
+              <p>Users: {{ t.maxUsers }}</p>
+              <p>Properties: {{ t.maxProperties }}</p>
+            </td>
+            <td class="px-4 py-4">
+              <div *ngIf="getMembers(t._id).length; else emptyMemberRow" class="flex flex-wrap gap-2">
+                <span *ngFor="let member of getMembers(t._id) | slice:0:3" class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-slate-700 dark:text-gray-200">
+                  {{ member.name }}
+                </span>
+                <span *ngIf="getMembers(t._id).length > 3" class="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500 dark:bg-slate-900 dark:text-gray-400">
+                  +{{ getMembers(t._id).length - 3 }} more
+                </span>
+              </div>
+              <ng-template #emptyMemberRow>
+                <p class="text-sm text-gray-500 dark:text-gray-400">No linked users</p>
+              </ng-template>
+            </td>
+            <td class="px-4 py-4">
+              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="t.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
+                {{ t.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="px-4 py-4">
+              <div class="flex justify-end gap-2">
+                <button (click)="openMembers(t)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700" title="Manage organization users">
+                  <i class="fas fa-users text-xs"></i>
+                </button>
+                <button (click)="openForm(t)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-300 text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700" title="Edit organization">
+                  <i class="fas fa-pen text-xs"></i>
+                </button>
+                <button (click)="deleteTenant(t._id)" class="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-300 text-red-600 transition-colors hover:bg-red-50 dark:border-red-900/70 dark:text-red-400 dark:hover:bg-red-950/30" title="Delete organization">
+                  <i class="fas fa-trash text-xs"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div *ngIf="!loading && tenants.length" class="grid grid-cols-1 gap-4 lg:hidden">
+    <div *ngFor="let t of tenants" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-start justify-between mb-3 gap-3">
+        <div>
+          <h3 class="font-semibold text-gray-800 dark:text-gray-100">{{ t.name }}</h3>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t.slug }}</p>
+        </div>
+        <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getPlanClasses(t.plan)">{{ t.plan }}</span>
+      </div>
+
+      <div class="space-y-1 text-sm text-gray-600 dark:text-gray-300 mb-3">
+        <div><i class="fas fa-envelope w-4 text-gray-400"></i> {{ t.contactEmail || '—' }}</div>
+        <div><i class="fas fa-users w-4 text-gray-400"></i> Max Users: {{ t.maxUsers }}</div>
+        <div><i class="fas fa-building w-4 text-gray-400"></i> Max Properties: {{ t.maxProperties }}</div>
+      </div>
+
+      <div class="rounded-xl border border-dashed border-gray-200 dark:border-slate-700 p-3 mb-3">
+        <div class="flex items-center justify-between gap-3 mb-2">
+          <p class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-400 dark:text-gray-500">Members</p>
+          <span class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ getMembers(t._id).length }} linked</span>
+        </div>
+
+        <div *ngIf="getMembers(t._id).length; else emptyMembers" class="flex flex-wrap gap-2">
+          <span *ngFor="let member of getMembers(t._id) | slice:0:4" class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-700 dark:bg-slate-700 dark:text-gray-200">
+            {{ member.name }}
+          </span>
+          <span *ngIf="getMembers(t._id).length > 4" class="rounded-full bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-500 dark:bg-slate-900 dark:text-gray-400">
+            +{{ getMembers(t._id).length - 4 }} more
+          </span>
+        </div>
+
+        <ng-template #emptyMembers>
+          <p class="text-sm text-gray-500 dark:text-gray-400">No users linked yet.</p>
+        </ng-template>
+      </div>
+
+      <div class="flex items-center justify-between">
+        <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="t.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'">
+          {{ t.isActive ? 'Active' : 'Inactive' }}
+        </span>
+        <div class="flex gap-2">
+          <button (click)="openMembers(t)" class="w-8 h-8 rounded border border-gray-300 dark:border-slate-600 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-700" title="Manage organization users">
+            <i class="fas fa-users text-xs"></i>
+          </button>
+          <button (click)="openForm(t)" class="w-8 h-8 rounded border border-gray-300 dark:border-slate-600 text-gray-500 dark:text-gray-400 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-slate-700" title="Edit organization">
+            <i class="fas fa-pen text-xs"></i>
+          </button>
+          <button (click)="deleteTenant(t._id)" class="w-8 h-8 rounded border border-red-300 dark:border-red-800 text-red-500 dark:text-red-400 flex items-center justify-center hover:bg-red-50 dark:hover:bg-red-900/20" title="Delete organization">
+            <i class="fas fa-trash text-xs"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div *ngIf="!loading && tenants.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+    <i class="fas fa-sitemap text-3xl mb-3 block"></i><p>No organizations found</p>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div *ngIf="showForm" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+      <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-4">{{ editing ? 'Edit Organization' : 'New Organization' }}</h2>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name *</label>
+          <input type="text" [(ngModel)]="form.name" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Slug</label>
+            <input type="text" [(ngModel)]="form.slug" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Plan</label>
+            <select [(ngModel)]="form.plan" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none">
+              <option *ngFor="let p of plans" [value]="p">{{ p | titlecase }}</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Contact Email</label>
+            <input type="email" [(ngModel)]="form.contactEmail" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Billing Email</label>
+            <input type="email" [(ngModel)]="form.billingEmail" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          </div>
+        </div>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Users</label>
+            <input type="number" [(ngModel)]="form.maxUsers" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Max Properties</label>
+            <input type="number" [(ngModel)]="form.maxProperties" class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="checkbox" [(ngModel)]="form.isActive" id="isActive" class="rounded border-gray-300 dark:border-slate-600" />
+          <label for="isActive" class="text-sm text-gray-700 dark:text-gray-300">Active</label>
+        </div>
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button (click)="showForm = false" class="px-4 py-2 rounded-lg border border-gray-300 dark:border-slate-600 text-sm text-gray-700 dark:text-gray-300">Cancel</button>
+        <button (click)="save()" [disabled]="saving" class="px-6 py-2 rounded-lg text-white text-sm font-medium" [style.background-color]="themeService.accent" [class.opacity-50]="saving">
+          {{ saving ? 'Saving...' : (editing ? 'Update' : 'Create') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="showMembers && selectedTenant" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 sm:p-6 w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ selectedTenant.name }} Members</h2>
+          <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Add existing users to this organization or remove them directly from the list.</p>
+        </div>
+        <button (click)="showMembers = false" class="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-gray-500 dark:border-slate-600 dark:text-gray-300">
+          <i class="fas fa-times text-xs"></i>
+        </button>
+      </div>
+
+      <div class="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <section class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Linked Users</h3>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{ getMembers(selectedTenant._id).length }} members</span>
+          </div>
+
+          <div *ngIf="getMembers(selectedTenant._id).length; else noMembers" class="space-y-3">
+            <div *ngFor="let member of getMembers(selectedTenant._id)" class="flex flex-col gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ member.name }}</p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ member.email }}</p>
+              </div>
+              <button (click)="removeUserFromTenant(member)" [disabled]="memberActionInProgress" class="inline-flex items-center justify-center gap-2 rounded-lg border border-red-300 px-3 py-2 text-xs font-medium text-red-600 dark:border-red-800 dark:text-red-400">
+                <i class="fas fa-user-minus text-[10px]"></i>
+                Remove
+              </button>
+            </div>
+          </div>
+
+          <ng-template #noMembers>
+            <div class="rounded-xl border border-dashed border-gray-300 px-4 py-8 text-sm text-gray-500 dark:border-slate-700 dark:text-gray-400">
+              This organization has no linked users yet.
+            </div>
+          </ng-template>
+        </section>
+
+        <section class="space-y-3">
+          <div class="flex items-center justify-between gap-3">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-gray-100">Add User</h3>
+          </div>
+
+          <div class="flex flex-col gap-3 sm:flex-row">
+            <input type="text" [(ngModel)]="memberSearch" (keyup.enter)="searchUsers()" placeholder="Search by name or email" class="w-full rounded-xl border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none dark:border-slate-600 dark:bg-slate-700 dark:text-gray-100" />
+            <button (click)="searchUsers()" class="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium text-white" [style.background-color]="themeService.accent">
+              <i class="fas fa-search text-xs"></i>
+              Search
+            </button>
+          </div>
+
+          <div *ngIf="searchingUsers" class="rounded-xl border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 dark:border-slate-700 dark:text-gray-400">
+            Searching users...
+          </div>
+
+          <div *ngIf="!searchingUsers && searchResults.length" class="space-y-3">
+            <div *ngFor="let user of searchResults" class="flex flex-col gap-3 rounded-xl border border-gray-200 px-4 py-3 dark:border-slate-700 sm:flex-row sm:items-center sm:justify-between">
+              <div class="min-w-0">
+                <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ user.name }}</p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400">{{ user.email }}</p>
+              </div>
+              <button
+                (click)="addUserToTenant(user)"
+                [disabled]="isUserLinkedToSelectedTenant(user) || memberActionInProgress"
+                class="inline-flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+                [style.background-color]="isUserLinkedToSelectedTenant(user) ? '#94a3b8' : themeService.accent"
+              >
+                <i class="fas" [class.fa-check]="isUserLinkedToSelectedTenant(user)" [class.fa-user-plus]="!isUserLinkedToSelectedTenant(user)" class="text-[10px]"></i>
+                {{ isUserLinkedToSelectedTenant(user) ? 'Linked' : 'Add to Organization' }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngIf="!searchingUsers && memberSearch && !searchResults.length" class="rounded-xl border border-dashed border-gray-300 px-4 py-6 text-sm text-gray-500 dark:border-slate-700 dark:text-gray-400">
+            No users matched your search.
+          </div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>

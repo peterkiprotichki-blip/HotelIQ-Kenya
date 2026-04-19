@@ -1,0 +1,166 @@
+<div class="min-h-screen">
+  <!-- Page header -->
+  <div class="flex items-start justify-between gap-4 mb-6">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Welcome back, {{ getFirstName(profile) }}</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Here's an overview of your tenancy</p>
+    </div>
+    <button
+      (click)="goToPayment()"
+      class="flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-semibold flex-shrink-0 transition-opacity hover:opacity-90"
+      style="background: var(--accent-600)"
+    >
+      <i class="fas fa-credit-card"></i> Pay Rent
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="flex flex-col items-center justify-center py-16 gap-3 text-gray-500 dark:text-gray-400">
+    <div class="w-8 h-8 border-2 border-gray-200 dark:border-slate-600 rounded-full animate-spin" style="border-top-color: var(--accent-600)"></div>
+    <p class="text-sm">Loading your dashboard…</p>
+  </div>
+
+  <ng-container *ngIf="!loading">
+    <!-- No lease -->
+    <div *ngIf="!lease" class="flex flex-col items-center justify-center py-16 text-center">
+      <div class="w-16 h-16 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center text-2xl text-gray-400 dark:text-gray-500 mb-4">
+        <i class="fas fa-file-contract"></i>
+      </div>
+      <h3 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">No active lease</h3>
+      <p class="text-sm text-gray-500 dark:text-gray-400 max-w-xs">Your property manager hasn't set up your lease yet. Please check back soon.</p>
+    </div>
+
+    <ng-container *ngIf="lease">
+      <!-- Stat cards -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-5">
+        <!-- Monthly Rent -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 sm:p-5 border-l-4 transition-colors" style="border-left-color: var(--accent-500)">
+          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Monthly Rent</div>
+          <div class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">KES {{ lease.rentAmount | number }}</div>
+          <div class="text-xs text-gray-400 dark:text-gray-500">{{ lease.paymentFrequency }}</div>
+        </div>
+
+        <!-- Next Due -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 sm:p-5 border-l-4 transition-colors"
+          [style.border-left-color]="daysUntilDue !== null && daysUntilDue! <= 7 ? '#f97316' : 'var(--accent-500)'">
+          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Next Due</div>
+          <div class="text-lg sm:text-xl font-bold mb-1"
+            [class]="daysUntilDue !== null && daysUntilDue! <= 7 ? 'text-orange-500' : 'text-gray-900 dark:text-gray-100'">
+            {{ daysUntilDue !== null ? daysUntilDue + ' days' : '—' }}
+          </div>
+          <div class="text-xs text-gray-400 dark:text-gray-500">Day {{ lease.paymentDueDay }} of each month</div>
+        </div>
+
+        <!-- Lease Status -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 sm:p-5 border-l-4 transition-colors"
+          [style.border-left-color]="lease.status === 'draft' ? '#f59e0b' : 'var(--accent-500)'">
+          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Lease Status</div>
+          <div class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">{{ lease.status | titlecase }}</div>
+          <div class="text-xs">
+            <span *ngIf="lease.isSigned" class="text-green-600 dark:text-green-400"><i class="fas fa-check mr-1"></i>Signed</span>
+            <span *ngIf="!lease.isSigned" class="text-amber-600 dark:text-amber-400"><i class="fas fa-exclamation-circle mr-1"></i>Awaiting signature</span>
+          </div>
+        </div>
+
+        <!-- Deposit -->
+        <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-100 dark:border-slate-700 p-4 sm:p-5 border-l-4 transition-colors" style="border-left-color: var(--accent-500)">
+          <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-1">Deposit</div>
+          <div class="text-lg sm:text-xl font-bold text-gray-900 dark:text-gray-100 mb-1">KES {{ lease.depositAmount | number }}</div>
+          <div class="text-xs">
+            <span *ngIf="lease.depositPaid" class="text-green-600 dark:text-green-400"><i class="fas fa-check mr-1"></i>Paid</span>
+            <span *ngIf="!lease.depositPaid" class="text-red-500 dark:text-red-400"><i class="fas fa-times mr-1"></i>Unpaid</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Balance alert card (only when there's an outstanding amount) -->
+      <div *ngIf="balance && balance.overdueMonths > 0"
+           class="mb-5 rounded-xl border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-4 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-red-100 dark:bg-red-800/40 flex items-center justify-center text-red-500 dark:text-red-400 flex-shrink-0">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div>
+            <div class="text-sm font-semibold text-red-700 dark:text-red-300">Outstanding Balance: {{ balance.currency }} {{ balance.balance | number }}</div>
+            <div class="text-xs text-red-500 dark:text-red-400 mt-0.5">{{ balance.overdueMonths }} month{{ balance.overdueMonths > 1 ? 's' : '' }} overdue · Paid {{ balance.currency }} {{ balance.totalPaid | number }} of {{ balance.currency }} {{ balance.totalDue | number }}</div>
+          </div>
+        </div>
+        <button (click)="goToPayment()" class="px-4 py-2 rounded-lg text-white text-xs font-semibold bg-red-600 hover:bg-red-700 transition-colors flex-shrink-0">
+          Pay Now
+        </button>
+      </div>
+
+      <!-- Lease card -->
+      <div class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 sm:p-6 mb-5 transition-colors">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">My Lease</h2>
+          <a routerLink="/tenant-portal/lease" class="text-sm font-medium transition-colors" style="color: var(--accent-600)">View full lease →</a>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+          <div>
+            <div class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Property</div>
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.propertyName }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Lease No.</div>
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.leaseNumber }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Start Date</div>
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.startDate | date:'mediumDate' }}</div>
+          </div>
+          <div>
+            <div class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">End Date</div>
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ lease.endDate | date:'mediumDate' }}</div>
+          </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="mb-4">
+          <div class="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-1.5">
+            <span>Lease progress</span>
+            <span>{{ leaseProgress }}%</span>
+          </div>
+          <div class="w-full bg-gray-100 dark:bg-slate-700 rounded-full h-2 overflow-hidden">
+            <div class="h-2 rounded-full transition-all duration-500" [style.width.%]="leaseProgress" style="background: var(--accent-600)"></div>
+          </div>
+        </div>
+
+        <!-- Sign banner -->
+        <div *ngIf="!lease.isSigned" class="flex items-center justify-between gap-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-4 py-3">
+          <span class="text-sm text-amber-800 dark:text-amber-300">Your lease needs your signature</span>
+          <a routerLink="/tenant-portal/lease" class="text-xs font-semibold px-3 py-1.5 rounded-lg text-white flex-shrink-0" style="background: var(--accent-600)">Sign Now</a>
+        </div>
+      </div>
+
+      <!-- Recent payments -->
+      <div *ngIf="recentPayments.length > 0" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 p-5 sm:p-6 transition-colors">
+        <div class="flex items-center justify-between mb-4">
+          <h2 class="text-base font-semibold text-gray-900 dark:text-gray-100">Recent Payments</h2>
+          <a routerLink="/tenant-portal/invoices" class="text-sm font-medium transition-colors" style="color: var(--accent-600)">View all →</a>
+        </div>
+        <div class="divide-y divide-gray-100 dark:divide-slate-700">
+          <div *ngFor="let p of recentPayments" class="flex items-center gap-4 py-3 first:pt-0 last:pb-0">
+            <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm flex-shrink-0"
+              [class]="p.status === 'completed' ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400' :
+                       p.status === 'pending'   ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400' :
+                                                  'bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400'">
+              <i [class]="p.status === 'completed' ? 'fas fa-check' : p.status === 'pending' ? 'fas fa-clock' : 'fas fa-times'"></i>
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ p.paymentPeriod || 'Rent Payment' }}</div>
+              <div class="text-xs text-gray-400 dark:text-gray-500">{{ p.paymentDate | date:'mediumDate' }}</div>
+            </div>
+            <div class="text-sm font-semibold flex-shrink-0"
+              [class]="p.status === 'completed' ? 'text-green-700 dark:text-green-400' :
+                       p.status === 'pending'   ? 'text-amber-700 dark:text-amber-400' :
+                                                  'text-red-500 dark:text-red-400'">
+              KES {{ p.amount | number }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+  </ng-container>
+</div>

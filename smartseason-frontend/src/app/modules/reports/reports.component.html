@@ -1,0 +1,82 @@
+﻿<div class="pb-10">
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Field Reports</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ roleLabel }}</p>
+    </div>
+    <button (click)="loadReports()" class="flex items-center gap-2 rounded-lg border border-gray-200 px-4 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-50 dark:border-slate-600 dark:text-gray-300 dark:hover:bg-slate-700">
+      <i class="fas fa-sync-alt text-xs"></i> Refresh
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="flex items-center justify-center py-24">
+    <i class="fas fa-spinner fa-spin text-3xl" [style.color]="themeService.accent"></i>
+  </div>
+
+  <div *ngIf="error" class="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <div *ngIf="!loading && stats as s" class="space-y-6">
+    <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Total Fields</p>
+        <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ s.totalFields }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Active</p>
+        <p class="mt-1 text-2xl font-bold text-green-600 dark:text-green-400">{{ s.statusBreakdown.active }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">At Risk</p>
+        <p class="mt-1 text-2xl font-bold text-orange-600 dark:text-orange-400">{{ s.statusBreakdown.atRisk }}</p>
+      </div>
+      <div class="rounded-xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <p class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">Observations</p>
+        <p class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{{ totalNotes }}</p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <h2 class="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">Status Distribution</h2>
+        <div style="height: 240px; position: relative;">
+          <canvas id="statusChart"></canvas>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <h2 class="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">Stage Progression</h2>
+        <div style="height: 240px; position: relative;">
+          <canvas id="stageChart"></canvas>
+        </div>
+      </div>
+
+      <div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+        <h2 class="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">Fields per Agent</h2>
+        <div *ngIf="agentBreakdown.length; else noAgents" style="height: 240px; position: relative;">
+          <canvas id="agentChart"></canvas>
+        </div>
+        <ng-template #noAgents>
+          <p class="text-sm text-gray-500 dark:text-gray-400">No assigned agent data yet.</p>
+        </ng-template>
+      </div>
+    </div>
+
+    <div class="rounded-xl border border-gray-200 bg-white p-6 dark:border-slate-700 dark:bg-slate-800">
+      <h2 class="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">At-Risk Fields</h2>
+      <div *ngIf="s.atRiskFields.length; else noRisk" class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div *ngFor="let f of s.atRiskFields" class="rounded-lg border border-orange-200 bg-orange-50 px-3 py-2 dark:border-orange-900/40 dark:bg-orange-900/10">
+          <p class="font-semibold text-gray-800 dark:text-gray-100">{{ f.name }}</p>
+          <p class="text-xs text-gray-600 dark:text-gray-300">{{ f.cropType }} · {{ f.currentStage }}</p>
+          <p class="text-xs text-orange-700 dark:text-orange-300" *ngIf="f.expectedHarvestDate">
+            Harvest target: {{ f.expectedHarvestDate | date:'mediumDate' }}
+          </p>
+        </div>
+      </div>
+      <ng-template #noRisk>
+        <p class="text-sm text-gray-500 dark:text-gray-400">No fields are currently marked as at risk.</p>
+      </ng-template>
+    </div>
+  </div>
+</div>

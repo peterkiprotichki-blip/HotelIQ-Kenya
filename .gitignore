@@ -1,0 +1,40 @@
+node_modules/
+dist/
+out-tsc/
+*.log
+npm-debug.log*
+.DS_Store
+.env
+.env.local
+.env.*.local
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Angular
+.angular/
+angular.json
+tsconfig.json
+
+# NestJS
+.next/
+
+# MongoDB
+*.mongodb
+
+# Optional npm cache directory
+.npm
+
+# Optional REPL history
+.node_repl_history
+
+# Mac
+.DS_Store
+
+# Temp files
+tmp/
+temp/

@@ -1,0 +1,191 @@
+<div>
+  <div class="flex flex-row items-center justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Units</h1>
+    <button (click)="openCreateModal()" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-white text-sm font-medium whitespace-nowrap flex-shrink-0" [style.background-color]="themeService.accent">
+      <i class="fas fa-plus"></i> Add Unit
+    </button>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+    <!-- Total Units -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Total Units</p>
+          <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-1">{{ totalUnits }}</p>
+        </div>
+        <i class="fas fa-door-open text-2xl text-blue-500 opacity-50"></i>
+      </div>
+    </div>
+
+    <!-- Occupied Units -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Occupied</p>
+          <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-1">{{ occupiedUnits }}</p>
+        </div>
+        <i class="fas fa-user text-2xl text-green-500 opacity-50"></i>
+      </div>
+    </div>
+
+    <!-- Vacant Units -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Vacant</p>
+          <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-1">{{ vacantUnits }}</p>
+        </div>
+        <i class="fas fa-check-circle text-2xl text-yellow-500 opacity-50"></i>
+      </div>
+    </div>
+
+    <!-- Maintenance Units -->
+    <div class="bg-white dark:bg-slate-800 rounded-lg border border-gray-200 dark:border-slate-700 p-4">
+      <div class="flex items-center justify-between">
+        <div>
+          <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">Maintenance</p>
+          <p class="text-2xl font-bold text-gray-800 dark:text-gray-100 mt-1">{{ maintenanceUnits }}</p>
+        </div>
+        <i class="fas fa-tools text-2xl text-orange-500 opacity-50"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <div class="flex-1">
+      <input
+        type="text"
+        [(ngModel)]="search"
+        (input)="onSearch()"
+        placeholder="Search units..."
+        class="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none"
+      />
+    </div>
+    <select [(ngModel)]="propertyIdFilter" (change)="onFilterChange()" [disabled]="!propertyOptionsLoaded" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Properties</option>
+      <option *ngFor="let property of propertyOptions" [value]="property._id">{{ property.name }}</option>
+    </select>
+    <select [(ngModel)]="unitTypeFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Types</option>
+      <option *ngFor="let t of unitTypeOptions" [value]="t">{{ getUnitTypeLabel(t) }}</option>
+    </select>
+    <select [(ngModel)]="floorFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Floors</option>
+      <option *ngFor="let f of floorOptions" [value]="f">{{ getFloorLabel(f) }}</option>
+    </select>
+    <select [(ngModel)]="statusFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Status</option>
+      <option *ngFor="let s of statusOptions" [value]="s">{{ s | titlecase }}</option>
+    </select>
+  </div>
+
+  <!-- Loading -->
+  <div *ngIf="loading" class="flex items-center justify-center py-20">
+    <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
+  </div>
+
+  <!-- Table -->
+  <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Unit Name</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Property</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Type</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Floor</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Rent</th>
+            <th class="text-left px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
+            <th class="text-right px-3 py-3 font-medium text-gray-600 dark:text-gray-300">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let unit of units"
+            class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 transition-colors"
+          >
+            <td class="px-3 py-3">
+              <p class="font-medium text-gray-800 dark:text-gray-100 cursor-pointer hover:text-cyan-600 dark:hover:text-cyan-400" (click)="openViewModal(unit)">{{ unit.unitNumber }}</p>
+            </td>
+            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell">
+              <p class="truncate">{{ getPropertyName(unit.propertyId) }}</p>
+            </td>
+            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden md:table-cell">
+              {{ getUnitTypeLabel(unit.unitType) }}
+            </td>
+            <td class="px-3 py-3 text-gray-600 dark:text-gray-300 hidden lg:table-cell">
+              {{ getFloorLabel(unit.floor) }}
+            </td>
+            <td class="px-3 py-3 font-medium text-gray-800 dark:text-gray-100">{{ unit.currency || 'KES' }} {{ unit.rentAmount | number }}</td>
+            <td class="px-3 py-3">
+              <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusClass(unit.status)">{{ unit.status | titlecase }}</span>
+            </td>
+            <td class="px-3 py-3 text-right">
+              <button
+                (click)="openViewModal(unit)"
+                class="text-xs sm:text-sm font-medium text-cyan-600 dark:text-cyan-400 hover:text-cyan-800 dark:hover:text-cyan-300 transition-colors mr-2 sm:mr-3"
+                title="View"
+              >
+                <i class="fas fa-eye"></i><span class="hidden sm:inline ml-1">View</span>
+              </button>
+              <button
+                (click)="openEditModal(unit)"
+                class="text-xs sm:text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors mr-2 sm:mr-3"
+                title="Edit"
+              >
+                <i class="fas fa-edit"></i><span class="hidden sm:inline ml-1">Edit</span>
+              </button>
+              <button
+                (click)="deleteUnit(unit._id)"
+                class="text-xs sm:text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 transition-colors"
+                title="Delete"
+              >
+                <i class="fas fa-trash"></i><span class="hidden sm:inline ml-1">Delete</span>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div *ngIf="units.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+      <i class="fas fa-door-open text-3xl mb-3 block"></i>
+      <p>No units found</p>
+    </div>
+
+    <!-- Pagination -->
+    <div *ngIf="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-slate-700">
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ total }} total</span>
+      <div class="flex gap-1">
+        <button *ngFor="let p of [].constructor(totalPages); let i = index"
+          (click)="goToPage(i + 1)"
+          class="w-8 h-8 rounded text-sm font-medium transition-colors"
+          [class.text-white]="page === i + 1"
+          [style.background-color]="page === i + 1 ? themeService.accent : 'transparent'"
+          [class.text-gray-600]="page !== i + 1"
+          [class.hover:bg-gray-100]="page !== i + 1"
+        >{{ i + 1 }}</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Form Modal -->
+  <app-units-form
+    [isOpen]="formModalOpen"
+    [unit]="selectedUnit"
+    [propertyId]="urlPropertyId"
+    (close)="closeFormModal()"
+    (save)="onUnitSaved($event)"
+  ></app-units-form>
+
+  <!-- View Modal -->
+  <app-unit-view
+    [isOpen]="viewModalOpen"
+    [unit]="selectedUnit"
+    (close)="closeViewModal()"
+    (edit)="onUnitEdit($event)"
+  ></app-unit-view>
+</div>

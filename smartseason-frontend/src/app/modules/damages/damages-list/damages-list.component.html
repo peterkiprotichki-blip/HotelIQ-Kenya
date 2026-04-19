@@ -1,0 +1,58 @@
+<div>
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Damages</h1>
+  </div>
+
+  <!-- Filters -->
+  <div class="flex flex-col sm:flex-row gap-3 mb-6">
+    <input type="text" [(ngModel)]="search" (keyup.enter)="onSearch()" placeholder="Search damages..." class="w-full sm:w-80 px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none" />
+    <select [(ngModel)]="statusFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Statuses</option>
+      <option *ngFor="let s of statuses" [value]="s">{{ s | titlecase }}</option>
+    </select>
+    <select [(ngModel)]="severityFilter" (change)="onFilterChange()" class="px-3 py-2 rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-900 dark:text-gray-100 text-sm outline-none">
+      <option value="">All Severities</option>
+      <option *ngFor="let sv of severities" [value]="sv">{{ sv | titlecase }}</option>
+    </select>
+  </div>
+
+  <div *ngIf="loading" class="flex items-center justify-center py-20">
+    <i class="fas fa-spinner fa-spin text-2xl" [style.color]="themeService.accent"></i>
+  </div>
+
+  <div *ngIf="!loading" class="bg-white dark:bg-slate-800 rounded-xl border border-gray-200 dark:border-slate-700 overflow-hidden">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-700/50">
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Description</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden sm:table-cell">Property</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden md:table-cell">Type</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Severity</th>
+            <th class="text-left px-4 py-3 font-medium text-gray-600 dark:text-gray-300">Status</th>
+            <th class="text-right px-4 py-3 font-medium text-gray-600 dark:text-gray-300 hidden lg:table-cell">Est. Cost</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let d of filteredDamages" (click)="viewDamage(d._id)" class="border-b border-gray-100 dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700/30 cursor-pointer transition-colors">
+            <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-100 max-w-xs truncate">{{ d.description }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 hidden sm:table-cell">{{ d.propertyName }}</td>
+            <td class="px-4 py-3 text-gray-600 dark:text-gray-300 capitalize hidden md:table-cell">{{ d.damageType }}</td>
+            <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getSeverityClasses(d.severity)">{{ d.severity }}</span></td>
+            <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getStatusClasses(d.status)">{{ d.status }}</span></td>
+            <td class="px-4 py-3 text-right font-medium text-gray-800 dark:text-gray-100 hidden lg:table-cell">{{ d.currency }} {{ d.estimatedCost | number }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div *ngIf="damages.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">
+      <i class="fas fa-hammer text-3xl mb-3 block"></i><p>No damages found</p>
+    </div>
+    <div *ngIf="totalPages > 1" class="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-slate-700">
+      <span class="text-sm text-gray-500 dark:text-gray-400">{{ total }} total</span>
+      <div class="flex gap-1">
+        <button *ngFor="let p of [].constructor(totalPages); let i = index" (click)="goToPage(i + 1)" class="w-8 h-8 rounded text-sm font-medium" [class.text-white]="page === i + 1" [style.background-color]="page === i + 1 ? themeService.accent : 'transparent'" [class.text-gray-600]="page !== i + 1">{{ i + 1 }}</button>
+      </div>
+    </div>
+  </div>
+</div>

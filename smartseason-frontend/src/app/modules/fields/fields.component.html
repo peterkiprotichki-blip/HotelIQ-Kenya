@@ -1,0 +1,61 @@
+<div class="space-y-6">
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Fields</h1>
+    <button
+      *ngIf="isAdminLike"
+      (click)="openCreateFieldModal()"
+      class="rounded-lg px-3 py-2 text-sm font-semibold text-white"
+      [style.background-color]="themeService.accent"
+    >
+      <i class="fas fa-plus mr-1"></i>
+      New Field
+    </button>
+  </div>
+
+  <div *ngIf="error" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <div *ngIf="isAdminLike && loadingAgents" class="rounded-lg border border-gray-200 bg-white px-4 py-3 text-sm text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-300">
+    <i class="fas fa-spinner fa-spin mr-2"></i>Loading field agents...
+  </div>
+
+  <app-fields-list
+    [fields]="fields"
+    [loading]="loading"
+    [updateDraft]="updateDraft"
+    [stages]="stages"
+    [agentNameResolver]="getAgentName.bind(this)"
+    [isAdminLike]="isAdminLike"
+    (stageChanged)="onStageChanged($event)"
+    (deleteRequested)="onDeleteField($event)"
+    (editRequested)="onEditField($event)"
+    (addNoteRequested)="onAddNote($event)"
+    (viewRequested)="onViewField($event)"
+  ></app-fields-list>
+
+  <app-field-create-modal
+    [visible]="showCreateModal"
+    [saving]="savingField"
+    [agents]="agents"
+    [mode]="fieldModalMode"
+    [initialValue]="fieldModalInitialValue"
+    (cancelled)="onModalClosed()"
+    (createRequested)="createField($event)"
+  ></app-field-create-modal>
+
+  <app-field-note-modal
+    [visible]="showNoteModal"
+    [saving]="creatingNote"
+    [fieldName]="selectedFieldForNote?.name || ''"
+    (cancelled)="showNoteModal = false; selectedFieldForNote = null"
+    (createRequested)="saveNote($event)"
+  ></app-field-note-modal>
+
+  <app-field-view-modal
+    [visible]="showViewModal"
+    [field]="selectedFieldForView"
+    [agentNameResolver]="getAgentName.bind(this)"
+    (closed)="onViewModalClosed()"
+  ></app-field-view-modal>
+</div>

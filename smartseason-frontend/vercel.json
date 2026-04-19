@@ -1,0 +1,19 @@
+{
+  "version": 2,
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/bomapro-frontend/browser",
+  "installCommand": "npm install",
+  "routes": [
+    {
+      "src": "^/api/(.*)",
+      "dest": "https://bomapro-backend.vercel.app/api/$1"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}

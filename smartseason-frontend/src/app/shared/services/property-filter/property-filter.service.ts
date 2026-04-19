@@ -40,7 +40,7 @@ export class PropertyFilterService {
 
   getSelectedPropertyName(): string {
     const prop = this.getSelectedProperty();
-    return prop ? prop.name : 'All Properties';
+    return prop ? prop.name : 'All Organizations';
   }
 
   loadProperties(): void {

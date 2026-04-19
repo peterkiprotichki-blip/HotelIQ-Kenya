@@ -168,20 +168,29 @@ The frontend will be available at `http://localhost:4400`
 
 ## Demo Credentials
 
-### Admin Account
-- **Email**: admin@smartseason.com
-- **Password**: Admin@123
-- **Role**: Admin
+Users are seeded from environment configuration (not hardcoded in source files).
 
-### Coordinator Account
-- **Email**: coordinator@smartseason.com
-- **Password**: Coordinator@123
-- **Role**: Coordinator
+1. Add `SEED_USERS_JSON` in `smartseason-backend/.env`.
+2. Use `POST /api/init/seed` to create users in the database.
 
-### Field Agent Accounts
-- **Email**: agent1@smartseason.com / agent2@smartseason.com
-- **Password**: Agent@123
-- **Role**: Agent
+Example `SEED_USERS_JSON`:
+
+```json
+[
+   {
+      "name": "SmartSeason Admin",
+      "email": "admin@smartseason.com",
+      "password": "Admin@123",
+      "role": "admin"
+   },
+   {
+      "name": "SmartSeason Field Agent",
+      "email": "agent1@smartseason.com",
+      "password": "Agent@123",
+      "role": "agent"
+   }
+]
+```
 
 ## Field Status Logic
 

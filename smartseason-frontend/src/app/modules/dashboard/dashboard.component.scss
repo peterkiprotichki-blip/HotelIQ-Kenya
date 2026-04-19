@@ -1,3 +1,61 @@
 :host {
   display: block;
 }
+
+.dashboard-shell {
+  .dashboard-hero {
+    background-image:
+      radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08), transparent 35%),
+      radial-gradient(circle at 85% 20%, rgba(16, 185, 129, 0.08), transparent 30%);
+  }
+
+  .metric-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08);
+  }
+
+  .metric-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 0.65rem;
+    font-size: 0.8rem;
+  }
+
+  .stage-row {
+    .stage-track {
+      margin-top: 0.4rem;
+      height: 0.55rem;
+      width: 100%;
+      border-radius: 999px;
+      background: rgba(148, 163, 184, 0.22);
+      overflow: hidden;
+    }
+
+    .stage-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.35s ease;
+    }
+
+    .stage-fill.planted { background: linear-gradient(90deg, #10b981, #34d399); }
+    .stage-fill.growing { background: linear-gradient(90deg, #06b6d4, #38bdf8); }
+    .stage-fill.ready { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .stage-fill.harvested { background: linear-gradient(90deg, #6366f1, #818cf8); }
+  }
+
+  .insight-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    padding: 0.55rem 0.65rem;
+    border-radius: 0.7rem;
+    background: rgba(148, 163, 184, 0.08);
+  }
+}

@@ -20,7 +20,12 @@ export class DashboardComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
+    this.loadStats();
+  }
+
+  loadStats(): void {
     this.loading = true;
+    this.error = '';
     this.fieldsService.getStats().subscribe({
       next: (data) => {
         this.stats = data;
@@ -40,5 +45,29 @@ export class DashboardComponent implements OnInit {
 
   get isAgent(): boolean {
     return this.authService.getUser()?.role === 'agent';
+  }
+
+  get completionPercent(): number {
+    if (!this.stats?.totalFields) {
+      return 0;
+    }
+
+    return Math.round((this.stats.statusBreakdown.completed / this.stats.totalFields) * 100);
+  }
+
+  statusPercent(status: 'active' | 'atRisk' | 'completed'): number {
+    if (!this.stats?.totalFields) {
+      return 0;
+    }
+
+    return Math.round((this.stats.statusBreakdown[status] / this.stats.totalFields) * 100);
+  }
+
+  stagePercent(stage: 'planted' | 'growing' | 'ready' | 'harvested'): number {
+    if (!this.stats?.totalFields) {
+      return 0;
+    }
+
+    return Math.round((this.stats.stageBreakdown[stage] / this.stats.totalFields) * 100);
   }
 }

@@ -228,6 +228,79 @@ export class UsersListComponent implements OnInit {
     return role.replace('_', ' ');
   }
 
+  getPermissionLabel(permission: string): string {
+    const normalized = permission === 'sign_lease' ? 'sign_leases' : permission;
+    const [actionRaw, ...resourceParts] = normalized.split('_');
+    const actionMap: Record<string, string> = {
+      view: 'View',
+      create: 'Create',
+      edit: 'Edit',
+      delete: 'Delete',
+      sign: 'Sign',
+      export: 'Export',
+    };
+
+    const resourceKey = resourceParts.join('_');
+    const resourceMap: Record<string, string> = {
+      dashboard: 'Dashboard',
+      properties: 'Fields',
+      tenants: 'Organizations',
+      leases: 'Field Assignments',
+      lease_details: 'Field Assignment Details',
+      payments: 'Payments',
+      damages: 'Field Incidents',
+      reports: 'Reports',
+      users: 'Users',
+      maintenance_requests: 'Maintenance Requests',
+    };
+
+    const action = actionMap[actionRaw] || this.toTitleCase(actionRaw);
+    const resource = resourceMap[resourceKey] || this.toTitleCase(resourceKey.replace(/_/g, ' '));
+    return `${action} ${resource}`.trim();
+  }
+
+  getPermissionContext(permission: string): string {
+    const normalized = permission === 'sign_lease' ? 'sign_leases' : permission;
+    const contextMap: Record<string, string> = {
+      view_properties: 'Open and list crop fields',
+      create_properties: 'Create new crop fields',
+      edit_properties: 'Update field details',
+      delete_properties: 'Remove fields from active records',
+      view_tenants: 'View organizations in SmartSeason',
+      create_tenants: 'Create organizations',
+      edit_tenants: 'Update organization settings',
+      delete_tenants: 'Delete organizations',
+      view_leases: 'View field assignments',
+      create_leases: 'Create field assignments',
+      edit_leases: 'Edit field assignments',
+      delete_leases: 'Delete field assignments',
+      view_lease_details: 'View assignment details and timeline',
+      sign_leases: 'Confirm assignment approvals',
+      view_damages: 'View field incidents',
+      create_damages: 'Log new field incidents',
+      edit_damages: 'Update incident records',
+      delete_damages: 'Remove incident records',
+      view_maintenance_requests: 'View maintenance requests',
+      create_maintenance_requests: 'Create maintenance requests',
+      edit_maintenance_requests: 'Update maintenance requests',
+      delete_maintenance_requests: 'Delete maintenance requests',
+    };
+
+    return contextMap[normalized] || 'Controls access to this feature.';
+  }
+
+  private toTitleCase(value: string): string {
+    if (!value) {
+      return '';
+    }
+
+    return value
+      .split(' ')
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
   private createEmptyForm(): UserFormModel {
     return {
       name: '',

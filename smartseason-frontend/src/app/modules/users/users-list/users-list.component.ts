@@ -21,6 +21,20 @@ interface RoleOption {
   label: string;
 }
 
+const SMARTSEASON_PERMISSIONS = [
+  'view_dashboard',
+  'view_properties',
+  'create_properties',
+  'edit_properties',
+  'delete_properties',
+  'view_reports',
+  'export_reports',
+  'view_users',
+  'create_users',
+  'edit_users',
+  'delete_users',
+] as const;
+
 @Component({
   selector: 'app-users-list',
   templateUrl: './users-list.component.html',
@@ -153,7 +167,8 @@ export class UsersListComponent implements OnInit {
 
   openPermissionsModal(user: BomoproUser): void {
     this.selectedUserForPermissions = user;
-    this.permissionDraft = [...(user.permissions || [])];
+    const allowed = new Set(SMARTSEASON_PERMISSIONS);
+    this.permissionDraft = [...(user.permissions || [])].filter((permission) => allowed.has(permission as any));
     this.showPermissions = true;
   }
 
@@ -173,7 +188,10 @@ export class UsersListComponent implements OnInit {
     }
 
     this.savingPermissions = true;
-    this.usersService.update(this.selectedUserForPermissions._id, { permissions: [...this.permissionDraft] }).subscribe({
+    const allowed = new Set(SMARTSEASON_PERMISSIONS);
+    const normalizedPermissions = [...this.permissionDraft].filter((permission) => allowed.has(permission as any));
+
+    this.usersService.update(this.selectedUserForPermissions._id, { permissions: normalizedPermissions as any }).subscribe({
       next: () => {
         this.savingPermissions = false;
         this.showPermissions = false;
@@ -229,7 +247,7 @@ export class UsersListComponent implements OnInit {
   }
 
   getPermissionLabel(permission: string): string {
-    const normalized = permission === 'sign_lease' ? 'sign_leases' : permission;
+    const normalized = permission;
     const [actionRaw, ...resourceParts] = normalized.split('_');
     const actionMap: Record<string, string> = {
       view: 'View',
@@ -244,14 +262,8 @@ export class UsersListComponent implements OnInit {
     const resourceMap: Record<string, string> = {
       dashboard: 'Dashboard',
       properties: 'Fields',
-      tenants: 'Organizations',
-      leases: 'Field Assignments',
-      lease_details: 'Field Assignment Details',
-      payments: 'Payments',
-      damages: 'Field Incidents',
       reports: 'Reports',
       users: 'Users',
-      maintenance_requests: 'Maintenance Requests',
     };
 
     const action = actionMap[actionRaw] || this.toTitleCase(actionRaw);
@@ -260,30 +272,19 @@ export class UsersListComponent implements OnInit {
   }
 
   getPermissionContext(permission: string): string {
-    const normalized = permission === 'sign_lease' ? 'sign_leases' : permission;
+    const normalized = permission;
     const contextMap: Record<string, string> = {
       view_properties: 'Open and list crop fields',
       create_properties: 'Create new crop fields',
       edit_properties: 'Update field details',
       delete_properties: 'Remove fields from active records',
-      view_tenants: 'View organizations in SmartSeason',
-      create_tenants: 'Create organizations',
-      edit_tenants: 'Update organization settings',
-      delete_tenants: 'Delete organizations',
-      view_leases: 'View field assignments',
-      create_leases: 'Create field assignments',
-      edit_leases: 'Edit field assignments',
-      delete_leases: 'Delete field assignments',
-      view_lease_details: 'View assignment details and timeline',
-      sign_leases: 'Confirm assignment approvals',
-      view_damages: 'View field incidents',
-      create_damages: 'Log new field incidents',
-      edit_damages: 'Update incident records',
-      delete_damages: 'Remove incident records',
-      view_maintenance_requests: 'View maintenance requests',
-      create_maintenance_requests: 'Create maintenance requests',
-      edit_maintenance_requests: 'Update maintenance requests',
-      delete_maintenance_requests: 'Delete maintenance requests',
+      view_dashboard: 'See overview metrics and status summaries',
+      view_reports: 'Open field reports and trends',
+      export_reports: 'Export reporting data',
+      view_users: 'View user list and profiles',
+      create_users: 'Create new system users',
+      edit_users: 'Update existing user details',
+      delete_users: 'Remove users from the system',
     };
 
     return contextMap[normalized] || 'Controls access to this feature.';
@@ -319,6 +320,15 @@ export class UsersListComponent implements OnInit {
     }
 
     return 'agent';
+  }
+
+  get availablePermissions(): string[] {
+    if (!this.permissionsData?.all?.length) {
+      return [];
+    }
+
+    const allowed = new Set(SMARTSEASON_PERMISSIONS);
+    return this.permissionsData.all.filter((permission) => allowed.has(permission as any));
   }
 
   private getDefaultTenantIds(): string[] {

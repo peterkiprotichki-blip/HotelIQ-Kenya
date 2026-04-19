@@ -33,6 +33,7 @@ export class FieldsComponent implements OnInit {
   selectedFieldForNote: Field | null = null;
   selectedFieldForEdit: Field | null = null;
   selectedFieldForView: Field | null = null;
+  fieldEditInitialValue: Partial<CreateFieldFormValue> | null = null;
 
   updateDraft: Record<string, { stage: FieldStage; note: string }> = {};
 
@@ -64,6 +65,7 @@ export class FieldsComponent implements OnInit {
 
   openCreateFieldModal(): void {
     this.selectedFieldForEdit = null;
+    this.fieldEditInitialValue = null;
     this.showCreateModal = true;
   }
 
@@ -186,6 +188,14 @@ export class FieldsComponent implements OnInit {
     }
 
     this.selectedFieldForEdit = field;
+    this.fieldEditInitialValue = {
+      name: field.name,
+      cropType: field.cropType,
+      plantingDate: field.plantingDate,
+      expectedHarvestDate: field.expectedHarvestDate,
+      assignedAgentId: field.assignedAgentId,
+      location: field.location,
+    };
     this.showCreateModal = true;
   }
 
@@ -229,25 +239,11 @@ export class FieldsComponent implements OnInit {
   onModalClosed(): void {
     this.showCreateModal = false;
     this.selectedFieldForEdit = null;
+    this.fieldEditInitialValue = null;
   }
 
   get fieldModalMode(): 'create' | 'edit' {
     return this.selectedFieldForEdit ? 'edit' : 'create';
-  }
-
-  get fieldModalInitialValue(): Partial<CreateFieldFormValue> | null {
-    if (!this.selectedFieldForEdit) {
-      return null;
-    }
-
-    return {
-      name: this.selectedFieldForEdit.name,
-      cropType: this.selectedFieldForEdit.cropType,
-      plantingDate: this.selectedFieldForEdit.plantingDate,
-      expectedHarvestDate: this.selectedFieldForEdit.expectedHarvestDate,
-      assignedAgentId: this.selectedFieldForEdit.assignedAgentId,
-      location: this.selectedFieldForEdit.location,
-    };
   }
 
   loadAgents(): void {

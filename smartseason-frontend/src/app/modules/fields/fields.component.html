@@ -1,5 +1,5 @@
 <div class="space-y-6">
-  <div class="flex items-center justify-between">
+  <div class="mb-6 flex items-center justify-between">
     <h1 class="text-2xl font-bold text-gray-800 dark:text-gray-100">Fields</h1>
     <button
       *ngIf="isAdminLike"
@@ -20,26 +20,28 @@
     <i class="fas fa-spinner fa-spin mr-2"></i>Loading field agents...
   </div>
 
-  <app-fields-list
-    [fields]="fields"
-    [loading]="loading"
-    [updateDraft]="updateDraft"
-    [stages]="stages"
-    [agentNameResolver]="getAgentName.bind(this)"
-    [isAdminLike]="isAdminLike"
-    (stageChanged)="onStageChanged($event)"
-    (deleteRequested)="onDeleteField($event)"
-    (editRequested)="onEditField($event)"
-    (addNoteRequested)="onAddNote($event)"
-    (viewRequested)="onViewField($event)"
-  ></app-fields-list>
+  <div class="mt-6">
+    <app-fields-list
+      [fields]="fields"
+      [loading]="loading"
+      [updateDraft]="updateDraft"
+      [stages]="stages"
+      [agentNameResolver]="getAgentName.bind(this)"
+      [isAdminLike]="isAdminLike"
+      (stageChanged)="onStageChanged($event)"
+      (deleteRequested)="onDeleteField($event)"
+      (editRequested)="onEditField($event)"
+      (addNoteRequested)="onAddNote($event)"
+      (viewRequested)="onViewField($event)"
+    ></app-fields-list>
+  </div>
 
   <app-field-create-modal
     [visible]="showCreateModal"
     [saving]="savingField"
     [agents]="agents"
     [mode]="fieldModalMode"
-    [initialValue]="fieldModalInitialValue"
+    [initialValue]="fieldEditInitialValue"
     (cancelled)="onModalClosed()"
     (createRequested)="createField($event)"
   ></app-field-create-modal>

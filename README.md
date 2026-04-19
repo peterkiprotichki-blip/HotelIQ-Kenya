@@ -185,21 +185,21 @@ The frontend will be available at `http://localhost:4400`
 
 ## Field Status Logic
 
-The system automatically computes field status based on:
-
-### **ACTIVE**
-- Field is in "Planted" or "Growing" stage
-- Last update is within the last 7 days (for Growing fields)
-- Expected harvest is more than 7 days away
-
-### **AT_RISK**
-- Field is in "Growing" stage with no updates for 7+ days
-- Expected harvest date is within 7 days
-- OR expected harvest date has passed
+The backend computes status automatically from each field's stage and dates. The approach is intentionally simple and consistent:
 
 ### **COMPLETED**
-- Field is in "Harvested" stage
-- Expected harvest date has passed
+- If the current stage is `harvested`
+
+### **AT_RISK**
+- If the field has not been updated for more than 7 days
+- OR if expected harvest date is within 7 days (including overdue dates)
+
+### **ACTIVE**
+- Any field that is not `completed` or `at_risk`
+
+This gives users two useful views at the same time:
+- **Stage** (`planted`, `growing`, `ready`, `harvested`) for operational progress
+- **Status** (`Active`, `At Risk`, `Completed`) for quick risk monitoring
 
 ## Design Decisions
 

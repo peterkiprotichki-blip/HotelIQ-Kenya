@@ -18,12 +18,14 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
         <div class="mb-3 flex items-start justify-between gap-3">
           <div>
             <h3 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ field.name }}</h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400">{{ field.cropType }} · planted {{ field.plantingDate | date:'mediumDate' }}</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Planted {{ field.plantingDate | date:'mediumDate' }}</p>
           </div>
           <span class="rounded-full px-2.5 py-1 text-xs font-semibold" [ngStyle]="stageStyle(field.currentStage)">{{ field.currentStage }}</span>
         </div>
 
         <div class="mb-3 text-sm text-gray-600 dark:text-gray-300">
+          <p>Crop Type: <span class="font-medium">{{ field.cropType }}</span></p>
+          <p>Status: <span class="font-medium" [ngStyle]="statusStyle(field.status)">{{ statusLabel(field.status) }}</span></p>
           <p>Assigned agent: <span class="font-medium">{{ agentNameResolver(field.assignedAgentId) }}</span></p>
           <p *ngIf="field.expectedHarvestDate">Expected harvest: {{ field.expectedHarvestDate | date:'mediumDate' }}</p>
           <div class="mt-2">
@@ -44,7 +46,7 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
         </div>
 
         <div class="border-t border-gray-100 pt-3 dark:border-slate-700">
-          <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Status</p>
+          <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Stage</p>
           <select
             [(ngModel)]="updateDraft[field._id].stage"
             (change)="stageChanged.emit({ field: field, stage: updateDraft[field._id].stage })"
@@ -54,16 +56,18 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
           </select>
 
           <div class="mt-3 flex flex-wrap gap-2">
-            <button (click)="viewRequested.emit(field)" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">View</button>
+            <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i></button>
             <button
               (click)="addNoteRequested.emit(field)"
-              class="rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
+              title="Add Note"
+              aria-label="Add Note"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
               [style.background-color]="themeService.accent"
             >
-              Add Note
+              <i class="fas fa-note-sticky"></i>
             </button>
-            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">Edit</button>
-            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30">Delete</button>
+            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" title="Edit" aria-label="Edit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-pen"></i></button>
+            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" title="Delete" aria-label="Delete" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div>
@@ -74,20 +78,26 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
     </div>
 
     <div *ngIf="!loading && fields.length" class="hidden overflow-x-auto rounded-xl border border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800 md:block">
-      <div class="min-w-[1160px]">
+      <div class="min-w-[1280px]">
         <div class="grid grid-cols-12 border-b border-gray-200 bg-gray-50 px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600 dark:border-slate-700 dark:bg-slate-900/40 dark:text-gray-300">
-          <div class="col-span-3">Field</div>
+          <div class="col-span-2">Field</div>
+          <div class="col-span-1">Crop Type</div>
           <div class="col-span-2">Agent</div>
-          <div class="col-span-2">Status</div>
+          <div class="col-span-2">Stage</div>
+          <div class="col-span-1">Status</div>
           <div class="col-span-1">Harvest</div>
           <div class="col-span-2">Notes</div>
-          <div class="col-span-2">Actions</div>
+          <div class="col-span-1">Actions</div>
         </div>
 
         <div *ngFor="let field of fields" class="grid grid-cols-12 items-center gap-3 border-b border-gray-100 px-4 py-3 text-sm text-gray-700 last:border-b-0 dark:border-slate-700 dark:text-gray-200">
-          <div class="col-span-3">
+          <div class="col-span-2">
             <p class="font-semibold text-gray-800 dark:text-gray-100">{{ field.name }}</p>
-            <p class="text-xs text-gray-500 dark:text-gray-400">{{ field.cropType }} · planted {{ field.plantingDate | date:'mediumDate' }}</p>
+            <p class="text-xs text-gray-500 dark:text-gray-400">Planted {{ field.plantingDate | date:'mediumDate' }}</p>
+          </div>
+
+          <div class="col-span-1 text-xs text-gray-600 dark:text-gray-300">
+            {{ field.cropType }}
           </div>
 
           <div class="col-span-2">
@@ -105,6 +115,10 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
             </select>
           </div>
 
+          <div class="col-span-1 text-xs font-semibold" [ngStyle]="statusStyle(field.status)">
+            {{ statusLabel(field.status) }}
+          </div>
+
           <div class="col-span-1 text-xs text-gray-600 dark:text-gray-300">
             <span *ngIf="field.expectedHarvestDate; else noHarvest">{{ field.expectedHarvestDate | date:'mediumDate' }}</span>
             <ng-template #noHarvest>N/A</ng-template>
@@ -120,17 +134,19 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
             <ng-template #noNotes>No notes yet</ng-template>
           </div>
 
-          <div class="col-span-2 flex flex-wrap gap-2">
-            <button (click)="viewRequested.emit(field)" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">View</button>
+          <div class="col-span-1 flex flex-wrap gap-2">
+            <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i></button>
             <button
               (click)="addNoteRequested.emit(field)"
-              class="rounded-lg px-3 py-1.5 text-xs font-semibold text-white"
+              title="Add Note"
+              aria-label="Add Note"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
               [style.background-color]="themeService.accent"
             >
-              Add Note
+              <i class="fas fa-note-sticky"></i>
             </button>
-            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">Edit</button>
-            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" class="rounded-lg border border-red-300 px-3 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30">Delete</button>
+            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" title="Edit" aria-label="Edit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-pen"></i></button>
+            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" title="Delete" aria-label="Delete" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i></button>
           </div>
         </div>
       </div>
@@ -200,6 +216,36 @@ export class FieldsListComponent {
     return {
       'background-color': 'var(--accent-50)',
       color: 'var(--accent-700)',
+    };
+  }
+
+  statusLabel(status: Field['status']): string {
+    if (status === 'at_risk') {
+      return 'At Risk';
+    }
+
+    if (status === 'completed') {
+      return 'Completed';
+    }
+
+    return 'Active';
+  }
+
+  statusStyle(status: Field['status']): Record<string, string> {
+    if (status === 'at_risk') {
+      return {
+        color: '#b45309',
+      };
+    }
+
+    if (status === 'completed') {
+      return {
+        color: '#374151',
+      };
+    }
+
+    return {
+      color: '#166534',
     };
   }
 }

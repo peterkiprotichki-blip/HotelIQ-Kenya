@@ -7,7 +7,7 @@ import { ThemeService } from './shared/services/theme/theme.service';
   styles: [':host { display: block; height: 100vh; }'],
 })
 export class AppComponent {
-  title = 'Bomapro';
+  title = 'SmartSeason';
 
   constructor(private themeService: ThemeService) {}
 }

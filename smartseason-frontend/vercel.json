@@ -1,12 +1,12 @@
 {
   "version": 2,
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/bomapro-frontend/browser",
+  "outputDirectory": "dist/smartseason-frontend/browser",
   "installCommand": "npm install",
   "routes": [
     {
       "src": "^/api/(.*)",
-      "dest": "https://bomapro-backend.vercel.app/api/$1"
+      "dest": "https://smartseason-backend.vercel.app/api/$1"
     },
     {
       "handle": "filesystem"

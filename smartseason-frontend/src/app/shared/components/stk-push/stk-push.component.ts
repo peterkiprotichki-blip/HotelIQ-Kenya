@@ -171,7 +171,7 @@ export interface StkPushResult {
 })
 export class StkPushComponent implements OnInit, OnDestroy {
   @Input() amount: number = 0;
-  @Input() accountReference: string = 'Bomapro';
+  @Input() accountReference: string = 'SmartSeason';
   @Input() description: string = 'Rent Payment';
   @Input() clientId: string = '';
   @Input() defaultPhone: string = '';

@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs';
 import { PropertiesService } from '../properties/properties.service';
 import { Property } from '../../interfaces/models';
 
-const STORAGE_KEY = 'bomapro_property_filter';
+const STORAGE_KEY = 'smartseason_property_filter';
 
 @Injectable({ providedIn: 'root' })
 export class PropertyFilterService {

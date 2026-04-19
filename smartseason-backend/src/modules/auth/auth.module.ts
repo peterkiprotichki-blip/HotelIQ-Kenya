@@ -24,7 +24,7 @@ const googleOAuthProviders =
     PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.registerAsync({
       useFactory: () => ({
-        secret: process.env.JWT_SECRET || 'bomapro-secret-change-me',
+        secret: process.env.JWT_SECRET || 'smartseason-secret-change-me',
         signOptions: { expiresIn: '7d' },
       }),
     }),

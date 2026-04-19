@@ -17,8 +17,8 @@ export class ThemeService {
   }
 
   constructor() {
-    const savedDark = localStorage.getItem('bomapro-theme-dark');
-    const savedAccent = localStorage.getItem('bomapro-accent-color');
+    const savedDark = localStorage.getItem('smartseason-theme-dark');
+    const savedAccent = localStorage.getItem('smartseason-accent-color');
 
     if (savedDark !== null) {
       this.applyTheme(savedDark === 'true');
@@ -40,7 +40,7 @@ export class ThemeService {
 
   private applyTheme(dark: boolean): void {
     this.isDarkSubject.next(dark);
-    localStorage.setItem('bomapro-theme-dark', String(dark));
+    localStorage.setItem('smartseason-theme-dark', String(dark));
     if (dark) {
       document.documentElement.classList.add('dark');
     } else {
@@ -50,7 +50,7 @@ export class ThemeService {
 
   private applyAccentColor(hex: string): void {
     this.accentSubject.next(hex);
-    localStorage.setItem('bomapro-accent-color', hex);
+    localStorage.setItem('smartseason-accent-color', hex);
 
     const shades = this.generatePalette(hex);
     const root = document.documentElement;

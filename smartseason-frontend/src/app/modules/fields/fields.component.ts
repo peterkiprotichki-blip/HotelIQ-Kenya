@@ -1,6 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, OnInit } from '@angular/core';
+import { Component, ElementRef, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { forkJoin } from 'rxjs';
+import { Chart, ChartConfiguration, registerables } from 'chart.js';
+import jsPDF from 'jspdf';
 import { AuthService } from '../../shared/services/auth/auth.service';
 import { ConfirmationService } from '../../shared/services/confirmation.service';
 import { NotificationService } from '../../shared/services/notification.service';
@@ -13,13 +15,15 @@ import { FieldNoteModalComponent, CreateFieldNoteValue } from './field-note-moda
 import { FieldViewModalComponent } from './field-view-modal.component';
 import { FieldsListComponent } from './fields-list.component';
 
+Chart.register(...registerables);
+
 @Component({
   selector: 'app-fields',
   standalone: true,
   imports: [CommonModule, FieldCreateModalComponent, FieldsListComponent, FieldNoteModalComponent, FieldViewModalComponent],
   templateUrl: './fields.component.html',
 })
-export class FieldsComponent implements OnInit {
+export class FieldsComponent implements OnInit, OnDestroy {
   fields: Field[] = [];
   agents: BomoproUser[] = [];
   loading = true;
@@ -49,6 +53,14 @@ export class FieldsComponent implements OnInit {
     model: string;
   }> = [];
   allFieldsAnalysisSummary = '';
+  allFieldsRiskCounts = {
+    low: 0,
+    medium: 0,
+    high: 0,
+  };
+
+  @ViewChild('allFieldsRiskChart') allFieldsRiskChart?: ElementRef<HTMLCanvasElement>;
+  private allFieldsRiskChartInstance: Chart | null = null;
 
   updateDraft: Record<string, { stage: FieldStage; note: string }> = {};
 
@@ -68,6 +80,10 @@ export class FieldsComponent implements OnInit {
     if (this.isAdminLike) {
       this.loadAgents();
     }
+  }
+
+  ngOnDestroy(): void {
+    this.destroyAllFieldsChart();
   }
 
   get userRole(): string {
@@ -282,16 +298,17 @@ export class FieldsComponent implements OnInit {
           }))
           .sort((left, right) => this.riskRank(right.insights.riskLevel) - this.riskRank(left.insights.riskLevel));
 
-        const riskCounts = this.allFieldsAnalysis.reduce(
+        this.allFieldsRiskCounts = this.allFieldsAnalysis.reduce(
           (accumulator, item) => {
-            accumulator[item.insights.riskLevel] += 1;
+            accumulator[item.insights.riskLevel as 'low' | 'medium' | 'high'] += 1;
             return accumulator;
           },
           { low: 0, medium: 0, high: 0 },
         );
 
-        this.allFieldsAnalysisSummary = `Analyzed ${this.allFieldsAnalysis.length} fields. ${riskCounts.high} high risk, ${riskCounts.medium} medium risk, and ${riskCounts.low} low risk.`;
+        this.allFieldsAnalysisSummary = `Analyzed ${this.allFieldsAnalysis.length} fields. ${this.allFieldsRiskCounts.high} high risk, ${this.allFieldsRiskCounts.medium} medium risk, and ${this.allFieldsRiskCounts.low} low risk.`;
         this.analyzingAllFields = false;
+        this.scheduleAllFieldsChartRender();
         this.notificationService.success('All fields analysis complete');
       },
       error: (err) => {
@@ -304,6 +321,7 @@ export class FieldsComponent implements OnInit {
   closeAllFieldsAnalysis(): void {
     this.showAllFieldsAnalysisModal = false;
     this.analyzingAllFields = false;
+    this.destroyAllFieldsChart();
   }
 
   onViewModalClosed(): void {
@@ -395,5 +413,176 @@ export class FieldsComponent implements OnInit {
       'background-color': '#dcfce7',
       color: '#166534',
     };
+  }
+
+  downloadAllFieldsPdf(): void {
+    if (!this.allFieldsAnalysis.length) {
+      return;
+    }
+
+    const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const margin = 40;
+    const contentWidth = pageWidth - margin * 2;
+    let cursorY = margin;
+
+    const ensureSpace = (requiredHeight: number): void => {
+      if (cursorY + requiredHeight <= pageHeight - margin) {
+        return;
+      }
+
+      pdf.addPage();
+      cursorY = margin;
+    };
+
+    const riskColors: Record<'low' | 'medium' | 'high', [number, number, number]> = {
+      low: [22, 163, 74],
+      medium: [217, 119, 6],
+      high: [185, 28, 28],
+    };
+
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(20);
+    pdf.text('Fields AI Analysis Report', margin, cursorY);
+    cursorY += 18;
+
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    pdf.setTextColor(75, 85, 99);
+    pdf.text(`Generated on ${new Date().toLocaleString()}`, margin, cursorY);
+    cursorY += 24;
+
+    pdf.setDrawColor(226, 232, 240);
+    pdf.setFillColor(248, 250, 252);
+    pdf.roundedRect(margin, cursorY, contentWidth, 70, 10, 10, 'FD');
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.setTextColor(15, 23, 42);
+    pdf.text('Summary', margin + 14, cursorY + 20);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setFontSize(10);
+    const summaryLines = pdf.splitTextToSize(this.allFieldsAnalysisSummary, contentWidth - 28);
+    pdf.text(summaryLines, margin + 14, cursorY + 36);
+    cursorY += 86;
+
+    const total = this.allFieldsAnalysis.length || 1;
+    const bars: Array<{ label: string; value: number; key: 'low' | 'medium' | 'high' }> = [
+      { label: 'High', value: this.allFieldsRiskCounts.high, key: 'high' },
+      { label: 'Medium', value: this.allFieldsRiskCounts.medium, key: 'medium' },
+      { label: 'Low', value: this.allFieldsRiskCounts.low, key: 'low' },
+    ];
+
+    ensureSpace(116);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setFontSize(11);
+    pdf.text('Risk Distribution', margin, cursorY);
+    cursorY += 10;
+
+    bars.forEach((bar) => {
+      const barWidth = Math.max(8, (bar.value / total) * (contentWidth - 90));
+      const [red, green, blue] = riskColors[bar.key];
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.setTextColor(55, 65, 81);
+      pdf.text(`${bar.label}`, margin, cursorY + 12);
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setFillColor(243, 244, 246);
+      pdf.roundedRect(margin + 54, cursorY + 2, contentWidth - 54, 14, 4, 4, 'F');
+      pdf.setFillColor(red, green, blue);
+      pdf.roundedRect(margin + 54, cursorY + 2, barWidth, 14, 4, 4, 'F');
+      pdf.setTextColor(17, 24, 39);
+      pdf.text(String(bar.value), margin + contentWidth - 18, cursorY + 12, { align: 'right' });
+      cursorY += 24;
+    });
+
+    cursorY += 10;
+
+    this.allFieldsAnalysis.forEach((item, index) => {
+      const sectionHeight = 110;
+      ensureSpace(sectionHeight);
+
+      if (index > 0 && cursorY > pageHeight - margin - sectionHeight) {
+        pdf.addPage();
+        cursorY = margin;
+      }
+
+      const [red, green, blue] = riskColors[item.insights.riskLevel];
+      pdf.setDrawColor(226, 232, 240);
+      pdf.setFillColor(255, 255, 255);
+      pdf.roundedRect(margin, cursorY, contentWidth, sectionHeight, 12, 12, 'FD');
+
+      pdf.setFillColor(red, green, blue);
+      pdf.roundedRect(margin, cursorY, 8, sectionHeight, 12, 0, 'F');
+
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(12);
+      pdf.setTextColor(15, 23, 42);
+      pdf.text(item.field.name, margin + 16, cursorY + 20);
+
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(75, 85, 99);
+      pdf.text(`${item.field.cropType} · ${item.field.currentStage} · ${item.insights.riskLevel.toUpperCase()} risk`, margin + 16, cursorY + 34);
+
+      const summaryText = pdf.splitTextToSize(item.insights.summary, contentWidth - 32);
+      pdf.setTextColor(31, 41, 55);
+      pdf.text(summaryText, margin + 16, cursorY + 50);
+
+      const actionsText = item.insights.recommendedActions.slice(0, 2).join(' • ');
+      if (actionsText) {
+        const actionLines = pdf.splitTextToSize(`Actions: ${actionsText}`, contentWidth - 32);
+        pdf.setTextColor(75, 85, 99);
+        pdf.text(actionLines, margin + 16, cursorY + 72);
+      }
+
+      cursorY += sectionHeight + 12;
+    });
+
+    pdf.save(`fields-analysis-${new Date().toISOString().slice(0, 10)}.pdf`);
+  }
+
+  private scheduleAllFieldsChartRender(): void {
+    window.setTimeout(() => this.renderAllFieldsChart(), 0);
+  }
+
+  private renderAllFieldsChart(): void {
+    const canvas = this.allFieldsRiskChart?.nativeElement;
+    if (!canvas) {
+      return;
+    }
+
+    this.destroyAllFieldsChart();
+
+    const config: ChartConfiguration<'doughnut'> = {
+      type: 'doughnut',
+      data: {
+        labels: ['High risk', 'Medium risk', 'Low risk'],
+        datasets: [
+          {
+            data: [this.allFieldsRiskCounts.high, this.allFieldsRiskCounts.medium, this.allFieldsRiskCounts.low],
+            backgroundColor: ['#ef4444', '#f59e0b', '#22c55e'],
+            borderColor: ['#fee2e2', '#fef3c7', '#dcfce7'],
+            borderWidth: 2,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          },
+        },
+      },
+    };
+
+    this.allFieldsRiskChartInstance = new Chart(canvas, config);
+  }
+
+  private destroyAllFieldsChart(): void {
+    this.allFieldsRiskChartInstance?.destroy();
+    this.allFieldsRiskChartInstance = null;
   }
 }

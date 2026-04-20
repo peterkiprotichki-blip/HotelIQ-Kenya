@@ -32,6 +32,7 @@ DATABASE_URL=postgresql://postgres:postgres@localhost:5432/smartseason?schema=pu
 JWT_SECRET=change-me
 JWT_EXPIRATION=24h
 FRONTEND_URL=http://localhost:4400
+GEMINI_API_KEY=your-gemini-api-key
 ```
 
 Run Prisma pipeline:
@@ -52,6 +53,7 @@ Backend endpoints:
 
 - API: `http://localhost:3000`
 - Swagger: `http://localhost:3000/api/docs`
+- Field AI insights: `POST /api/fields/:id/ai/insights`
 
 ## 2. Frontend Setup
 

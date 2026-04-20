@@ -30,45 +30,56 @@ export class FieldAiService {
     }
 
     const prompt = this.buildPrompt(mapRecord(field), focus);
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: prompt }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 700,
-            responseMimeType: 'application/json',
+    const model = 'gemini-2.0-flash';
+    let insights: FieldInsight;
+    let source: 'gemini' | 'fallback' = 'gemini';
+
+    try {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
           },
-        }),
-      },
-    );
+          body: JSON.stringify({
+            contents: [
+              {
+                role: 'user',
+                parts: [{ text: prompt }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 700,
+              responseMimeType: 'application/json',
+            },
+          }),
+        },
+      );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new InternalServerErrorException(`Gemini request failed: ${response.status} ${errorText}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini request failed: ${response.status} ${errorText}`);
+      }
+
+      const payload = await response.json();
+      const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (!text) {
+        throw new Error('Gemini returned an empty response');
+      }
+
+      insights = this.parseInsights(text);
+    } catch (error) {
+      source = 'fallback';
+      insights = this.buildFallbackInsights(mapRecord(field), focus);
     }
 
-    const payload = await response.json();
-    const text = payload?.candidates?.[0]?.content?.parts?.[0]?.text;
-    if (!text) {
-      throw new InternalServerErrorException('Gemini returned an empty response');
-    }
-
-    const insights = this.parseInsights(text);
     return {
       field: mapRecord(field),
       insights,
-      model: 'gemini-1.5-flash',
+      source,
+      model,
     };
   }
 
@@ -113,6 +124,36 @@ export class FieldAiService {
         recommendedActions: [],
       };
     }
+  }
+
+  private buildFallbackInsights(field: any, focus?: string): FieldInsight {
+    const hasHarvestPressure = field.expectedHarvestDate
+      ? (new Date(field.expectedHarvestDate).getTime() - Date.now()) / (24 * 60 * 60 * 1000) <= 14
+      : false;
+    const isStale = field.updatedAt
+      ? Date.now() - new Date(field.updatedAt).getTime() > 7 * 24 * 60 * 60 * 1000
+      : false;
+
+    const riskLevel = field.status === 'at_risk' || hasHarvestPressure || isStale ? 'high' : 'medium';
+    const concerns = [
+      ...(isStale ? ['No recent update captured for this field.'] : []),
+      ...(hasHarvestPressure ? ['Harvest date is approaching, so follow-up should be prioritized.'] : []),
+      ...(field.notes?.length ? [] : ['There are no notes yet, so visibility is limited.']),
+    ];
+
+    const recommendedActions = [
+      'Inspect the field and confirm crop condition.',
+      'Update the field stage and add notes after the next visit.',
+      ...(field.expectedHarvestDate ? ['Review harvest timing and assign a follow-up date.'] : ['Capture an expected harvest date to improve planning.']),
+    ];
+
+    return {
+      summary: `Fallback analysis for ${field.name}: the field is ${field.status} at stage ${field.currentStage}. ${focus ? `Focus: ${focus}` : 'Review crop condition, timing, and recent notes.'}`,
+      riskLevel,
+      concerns,
+      recommendedActions,
+      followUpQuestion: 'Would you like a weekly action plan for this field?',
+    };
   }
 
   private normalizeRiskLevel(value: unknown): 'low' | 'medium' | 'high' {

@@ -28,8 +28,9 @@ services:
       - key: GEMINI_API_KEY
         sync: false
 
-  - type: static
+  - type: web
     name: smartseason-frontend
+    runtime: static
     rootDir: smartseason-frontend
     buildCommand: npm install && npm run build
     staticPublishPath: dist/smartseason-frontend/browser

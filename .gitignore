@@ -17,8 +17,8 @@ npm-debug.log*
 
 # Angular
 .angular/
-angular.json
-tsconfig.json
+/angular.json
+/tsconfig.json
 
 # NestJS
 .next/

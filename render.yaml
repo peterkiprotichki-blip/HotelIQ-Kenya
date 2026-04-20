@@ -7,8 +7,9 @@ services:
     name: smartseason-backend
     runtime: node
     plan: free
-    buildCommand: npm --prefix smartseason-backend install && npx --prefix smartseason-backend prisma generate --schema smartseason-backend/prisma/schema.prisma && npx --prefix smartseason-backend tsc -p smartseason-backend/tsconfig.json
-    startCommand: npx --prefix smartseason-backend prisma migrate deploy --schema smartseason-backend/prisma/schema.prisma && node smartseason-backend/dist/main.js
+    rootDir: smartseason-backend
+    buildCommand: npm install && npx prisma generate --schema prisma/schema.prisma && npx tsc -p tsconfig.json
+    startCommand: npx prisma migrate deploy --schema prisma/schema.prisma && node dist/main.js
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -30,8 +31,9 @@ services:
   - type: web
     name: smartseason-frontend
     runtime: static
-    buildCommand: npm --prefix smartseason-frontend install && npm --prefix smartseason-frontend run build
-    staticPublishPath: smartseason-frontend/dist/smartseason-frontend/browser
+    rootDir: smartseason-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist/smartseason-frontend/browser
     envVars:
       - key: NODE_VERSION
         value: 20

@@ -131,12 +131,58 @@ import { Field, FieldAiInsights, FieldStage, FieldStatus } from '../../shared/se
                 {{ analysisResult.followUpQuestion }}
               </p>
 
-              <p class="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Source: {{ analysisSource || 'gemini' }}</p>
+              <p class="text-[11px] uppercase tracking-wide text-gray-400 dark:text-gray-500">Source: {{ sourceLabel(analysisSource) }}</p>
             </div>
 
             <ng-template #emptyAnalysis>
               <p class="mt-3 text-sm text-gray-500 dark:text-gray-400">Click “Analyze with AI” to generate a field summary.</p>
             </ng-template>
+          </div>
+
+          <div class="mt-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">AI Chat</p>
+              <span *ngIf="chatSending" class="text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner fa-spin mr-1"></i>Responding...
+              </span>
+            </div>
+
+            <div class="mt-2 max-h-52 space-y-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+              <p *ngIf="!chatMessages.length" class="text-sm text-gray-500 dark:text-gray-400">
+                Ask follow-up questions about this field after analysis.
+              </p>
+
+              <div *ngFor="let message of chatMessages" class="flex" [class.justify-end]="message.role === 'user'" [class.justify-start]="message.role === 'assistant'">
+                <div class="max-w-[88%] rounded-xl px-3 py-2 text-sm leading-6" [ngStyle]="chatBubbleStyle(message.role)">
+                  <p class="whitespace-pre-wrap">{{ message.text }}</p>
+                  <p class="mt-1 text-[10px] uppercase tracking-wide" [style.opacity]="0.7">{{ message.createdAt }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="chatError" class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+              {{ chatError }}
+            </div>
+
+            <div class="mt-2 flex gap-2">
+              <textarea
+                #chatInput
+                rows="2"
+                class="min-h-[42px] flex-1 resize-y rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-teal-600 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+                placeholder="Ask a follow-up question about this field..."
+                [disabled]="chatSending"
+                (keydown.enter)="onChatEnter($event, chatInput)"
+              ></textarea>
+              <button
+                type="button"
+                (click)="sendChat(chatInput)"
+                [disabled]="chatSending || !chatInput.value.trim()"
+                class="rounded-xl border px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                [style.background-color]="'var(--accent, #0f766e)'"
+              >
+                Send
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -151,9 +197,13 @@ export class FieldViewModalComponent {
   @Input() analysisLoading = false;
   @Input() analysisSource: 'gemini' | 'fallback' | '' = '';
   @Input() analysisError = '';
+  @Input() chatMessages: Array<{ role: 'user' | 'assistant'; text: string; createdAt: string }> = [];
+  @Input() chatSending = false;
+  @Input() chatError = '';
 
   @Output() closed = new EventEmitter<void>();
   @Output() analyzeRequested = new EventEmitter<void>();
+  @Output() chatSent = new EventEmitter<string>();
 
   stageLabel(stage: FieldStage): string {
     return stage.charAt(0).toUpperCase() + stage.slice(1);
@@ -257,5 +307,51 @@ export class FieldViewModalComponent {
     }
 
     return note.slice(separatorIndex + 3);
+  }
+
+  sendChat(input: HTMLTextAreaElement): void {
+    const message = input.value.trim();
+    if (!message || this.chatSending) {
+      return;
+    }
+
+    this.chatSent.emit(message);
+    input.value = '';
+  }
+
+  onChatEnter(event: Event, input: HTMLTextAreaElement): void {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    this.sendChat(input);
+  }
+
+  chatBubbleStyle(role: 'user' | 'assistant'): Record<string, string> {
+    if (role === 'user') {
+      return {
+        'background-color': '#0f766e',
+        color: '#ffffff',
+      };
+    }
+
+    return {
+      'background-color': '#f1f5f9',
+      color: '#0f172a',
+    };
+  }
+
+  sourceLabel(source: 'gemini' | 'fallback' | ''): string {
+    if (source === 'fallback') {
+      return 'SmartSeason AI';
+    }
+
+    if (source === 'gemini') {
+      return 'SmartSeason AI';
+    }
+
+    return 'SmartSeason AI';
   }
 }

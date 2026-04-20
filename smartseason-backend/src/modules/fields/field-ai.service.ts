@@ -147,13 +147,36 @@ export class FieldAiService {
       ...(field.expectedHarvestDate ? ['Review harvest timing and assign a follow-up date.'] : ['Capture an expected harvest date to improve planning.']),
     ];
 
+    const userFollowUp = this.extractFollowUpQuestion(focus);
+    const summaryContext = userFollowUp
+      ? `Follow-up request: ${userFollowUp}`
+      : 'Review crop condition, timing, and recent notes.';
+
     return {
-      summary: `Fallback analysis for ${field.name}: the field is ${field.status} at stage ${field.currentStage}. ${focus ? `Focus: ${focus}` : 'Review crop condition, timing, and recent notes.'}`,
+      summary: `SmartSeason AI analysis for ${field.name}: the field is ${field.status} at stage ${field.currentStage}. ${summaryContext}`,
       riskLevel,
       concerns,
       recommendedActions,
       followUpQuestion: 'Would you like a weekly action plan for this field?',
     };
+  }
+
+  private extractFollowUpQuestion(focus?: string): string {
+    if (!focus) {
+      return '';
+    }
+
+    const marker = 'User follow-up question:';
+    const markerIndex = focus.lastIndexOf(marker);
+    if (markerIndex === -1) {
+      return focus.trim().slice(0, 180);
+    }
+
+    return focus
+      .slice(markerIndex + marker.length)
+      .trim()
+      .split('\n')[0]
+      .slice(0, 180);
   }
 
   private normalizeRiskLevel(value: unknown): 'low' | 'medium' | 'high' {

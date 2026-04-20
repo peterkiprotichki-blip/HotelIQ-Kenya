@@ -17,6 +17,12 @@ import { FieldsListComponent } from './fields-list.component';
 
 Chart.register(...registerables);
 
+type FieldAiChatMessage = {
+  role: 'user' | 'assistant';
+  text: string;
+  createdAt: string;
+};
+
 @Component({
   selector: 'app-fields',
   standalone: true,
@@ -46,6 +52,9 @@ export class FieldsComponent implements OnInit, OnDestroy {
   fieldEditInitialValue: Partial<CreateFieldFormValue> | null = null;
   fieldAiAnalysis: FieldAiInsights | null = null;
   fieldAiSource: 'gemini' | 'fallback' | '' = '';
+  fieldAiChatMessages: FieldAiChatMessage[] = [];
+  fieldAiChatSending = false;
+  fieldAiChatError = '';
   allFieldsAnalysis: Array<{
     field: Field;
     insights: FieldAiInsights;
@@ -58,6 +67,9 @@ export class FieldsComponent implements OnInit, OnDestroy {
     medium: 0,
     high: 0,
   };
+  allFieldsChatMessages: FieldAiChatMessage[] = [];
+  allFieldsChatSending = false;
+  allFieldsChatError = '';
 
   @ViewChild('allFieldsRiskChart') allFieldsRiskChart?: ElementRef<HTMLCanvasElement>;
   private allFieldsRiskChartInstance: Chart | null = null;
@@ -262,17 +274,13 @@ export class FieldsComponent implements OnInit, OnDestroy {
   onViewField(field: Field): void {
     this.selectedFieldForView = field;
     this.showViewModal = true;
-    this.fieldAiAnalysis = null;
-    this.fieldAiSource = '';
-    this.aiError = '';
+    this.resetFieldAiState();
   }
 
   onAnalyzeField(field: Field): void {
     this.selectedFieldForView = field;
     this.showViewModal = true;
-    this.fieldAiAnalysis = null;
-    this.fieldAiSource = '';
-    this.aiError = '';
+    this.resetFieldAiState();
     this.analyzeSelectedField();
   }
 
@@ -285,6 +293,7 @@ export class FieldsComponent implements OnInit, OnDestroy {
     this.allFieldsAiError = '';
     this.allFieldsAnalysis = [];
     this.allFieldsAnalysisSummary = '';
+    this.resetAllFieldsChatState();
     this.showAllFieldsAnalysisModal = true;
 
     forkJoin(this.fields.map((field) => this.fieldsService.analyze(field._id, 'Give me the top risks and next actions for this field.'))).subscribe({
@@ -322,15 +331,92 @@ export class FieldsComponent implements OnInit, OnDestroy {
     this.showAllFieldsAnalysisModal = false;
     this.analyzingAllFields = false;
     this.destroyAllFieldsChart();
+    this.resetAllFieldsChatState();
+  }
+
+  sendAllFieldsAiMessage(message: string): void {
+    const question = message.trim();
+    if (!question || this.allFieldsChatSending || !this.fields.length) {
+      return;
+    }
+
+    this.allFieldsChatError = '';
+    this.allFieldsChatMessages = [
+      ...this.allFieldsChatMessages,
+      {
+        role: 'user',
+        text: question,
+        createdAt: this.formatChatTime(),
+      },
+    ];
+
+    this.allFieldsChatSending = true;
+    const focus = this.buildAllFieldsFollowUpFocus(question);
+
+    forkJoin(this.fields.map((field) => this.fieldsService.analyze(field._id, focus))).subscribe({
+      next: (results) => {
+        this.allFieldsAnalysis = results
+          .map((result) => ({
+            field: result.field,
+            insights: result.insights,
+            source: result.source,
+            model: result.model,
+          }))
+          .sort((left, right) => this.riskRank(right.insights.riskLevel) - this.riskRank(left.insights.riskLevel));
+
+        this.allFieldsRiskCounts = this.allFieldsAnalysis.reduce(
+          (accumulator, item) => {
+            accumulator[item.insights.riskLevel] += 1;
+            return accumulator;
+          },
+          { low: 0, medium: 0, high: 0 },
+        );
+
+        this.allFieldsAnalysisSummary = `Analyzed ${this.allFieldsAnalysis.length} fields. ${this.allFieldsRiskCounts.high} high risk, ${this.allFieldsRiskCounts.medium} medium risk, and ${this.allFieldsRiskCounts.low} low risk.`;
+        this.scheduleAllFieldsChartRender();
+
+        this.allFieldsChatMessages = [
+          ...this.allFieldsChatMessages,
+          {
+            role: 'assistant',
+            text: this.formatAllFieldsAssistantMessage(question),
+            createdAt: this.formatChatTime(),
+          },
+        ];
+        this.allFieldsChatSending = false;
+      },
+      error: (err) => {
+        this.allFieldsChatSending = false;
+        this.allFieldsChatError = err?.error?.message || 'Failed to get AI response for all fields';
+      },
+    });
+  }
+
+  onAllFieldsChatEnter(event: Event, input: HTMLTextAreaElement): void {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    this.sendAllFieldsAiMessage(input.value);
+    input.value = '';
+  }
+
+  sendAllFieldsChatFromInput(input: HTMLTextAreaElement): void {
+    const message = input.value.trim();
+    if (!message || this.allFieldsChatSending) {
+      return;
+    }
+
+    this.sendAllFieldsAiMessage(message);
+    input.value = '';
   }
 
   onViewModalClosed(): void {
     this.showViewModal = false;
     this.selectedFieldForView = null;
-    this.fieldAiAnalysis = null;
-    this.fieldAiSource = '';
-    this.aiError = '';
-    this.analyzingField = false;
+    this.resetFieldAiState();
   }
 
   analyzeSelectedField(): void {
@@ -350,6 +436,44 @@ export class FieldsComponent implements OnInit, OnDestroy {
       error: (err) => {
         this.analyzingField = false;
         this.aiError = err?.error?.message || 'Failed to analyze field';
+      },
+    });
+  }
+
+  sendFieldAiMessage(message: string): void {
+    const question = message.trim();
+    if (!question || !this.selectedFieldForView || this.fieldAiChatSending) {
+      return;
+    }
+
+    this.fieldAiChatError = '';
+    this.fieldAiChatMessages = [
+      ...this.fieldAiChatMessages,
+      {
+        role: 'user',
+        text: question,
+        createdAt: this.formatChatTime(),
+      },
+    ];
+
+    this.fieldAiChatSending = true;
+    this.fieldsService.analyze(this.selectedFieldForView._id, this.buildFollowUpFocus(question)).subscribe({
+      next: (res) => {
+        this.fieldAiAnalysis = res.insights;
+        this.fieldAiSource = res.source;
+        this.fieldAiChatMessages = [
+          ...this.fieldAiChatMessages,
+          {
+            role: 'assistant',
+            text: this.formatInsightsMessage(res.insights),
+            createdAt: this.formatChatTime(),
+          },
+        ];
+        this.fieldAiChatSending = false;
+      },
+      error: (err) => {
+        this.fieldAiChatSending = false;
+        this.fieldAiChatError = err?.error?.message || 'Failed to get AI response';
       },
     });
   }
@@ -413,6 +537,112 @@ export class FieldsComponent implements OnInit, OnDestroy {
       'background-color': '#dcfce7',
       color: '#166534',
     };
+  }
+
+  private resetFieldAiState(): void {
+    this.fieldAiAnalysis = null;
+    this.fieldAiSource = '';
+    this.aiError = '';
+    this.analyzingField = false;
+    this.fieldAiChatMessages = [];
+    this.fieldAiChatSending = false;
+    this.fieldAiChatError = '';
+  }
+
+  private formatInsightsMessage(insights: FieldAiInsights): string {
+    const sections = [insights.summary];
+    if (insights.recommendedActions.length) {
+      sections.push(`Recommended actions: ${insights.recommendedActions.join('; ')}`);
+    }
+    if (insights.followUpQuestion) {
+      sections.push(insights.followUpQuestion);
+    }
+
+    return sections.join('\n\n');
+  }
+
+  private buildFollowUpFocus(question: string): string {
+    const history = this.fieldAiChatMessages
+      .slice(-6)
+      .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.text}`)
+      .join('\n');
+
+    const summary = this.fieldAiAnalysis?.summary ? `Current analysis summary: ${this.fieldAiAnalysis.summary}` : '';
+
+    return [summary, history ? `Conversation so far:\n${history}` : '', `User follow-up question: ${question}`]
+      .filter(Boolean)
+      .join('\n\n');
+  }
+
+  private formatChatTime(): string {
+    return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
+
+  private resetAllFieldsChatState(): void {
+    this.allFieldsChatMessages = [];
+    this.allFieldsChatSending = false;
+    this.allFieldsChatError = '';
+  }
+
+  private buildAllFieldsFollowUpFocus(question: string): string {
+    const history = this.allFieldsChatMessages
+      .slice(-6)
+      .map((message) => `${message.role === 'user' ? 'User' : 'Assistant'}: ${message.text}`)
+      .join('\n');
+
+    const baselineSummary = this.allFieldsAnalysisSummary ? `Current portfolio summary: ${this.allFieldsAnalysisSummary}` : '';
+
+    return [baselineSummary, history ? `Conversation so far:\n${history}` : '', `User follow-up question: ${question}`]
+      .filter(Boolean)
+      .join('\n\n');
+  }
+
+  private formatAllFieldsAssistantMessage(question: string): string {
+    const highRiskFields = this.allFieldsAnalysis
+      .filter((item) => item.insights.riskLevel === 'high')
+      .slice(0, 3)
+      .map((item) => item.field.name);
+
+    const actionCounts = new Map<string, { label: string; count: number }>();
+    this.allFieldsAnalysis.forEach((item) => {
+      item.insights.recommendedActions.forEach((action) => {
+        const key = action.trim().toLowerCase();
+        if (!key) {
+          return;
+        }
+
+        const current = actionCounts.get(key);
+        if (!current) {
+          actionCounts.set(key, { label: action, count: 1 });
+          return;
+        }
+
+        actionCounts.set(key, {
+          label: current.label,
+          count: current.count + 1,
+        });
+      });
+    });
+
+    const topActions = Array.from(actionCounts.values())
+      .sort((left, right) => right.count - left.count)
+      .slice(0, 3)
+      .map((item) => `${item.label} (${item.count} fields)`);
+
+    const lines: string[] = [
+      `Follow-up: ${question}`,
+      `Portfolio status: ${this.allFieldsRiskCounts.high} high risk, ${this.allFieldsRiskCounts.medium} medium risk, ${this.allFieldsRiskCounts.low} low risk fields.`,
+    ];
+
+    if (highRiskFields.length) {
+      lines.push(`Highest priority fields: ${highRiskFields.join(', ')}.`);
+    }
+
+    if (topActions.length) {
+      lines.push(`Top next actions: ${topActions.join('; ')}.`);
+    }
+
+    return lines.join('\n\n');
   }
 
   downloadAllFieldsPdf(): void {

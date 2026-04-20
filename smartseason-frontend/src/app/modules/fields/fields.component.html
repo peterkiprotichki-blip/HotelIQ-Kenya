@@ -75,8 +75,12 @@
     [analysisLoading]="analyzingField"
     [analysisSource]="fieldAiSource"
     [analysisError]="aiError"
+    [chatMessages]="fieldAiChatMessages"
+    [chatSending]="fieldAiChatSending"
+    [chatError]="fieldAiChatError"
     (closed)="onViewModalClosed()"
     (analyzeRequested)="analyzeSelectedField()"
+    (chatSent)="sendFieldAiMessage($event)"
   ></app-field-view-modal>
 
   <div *ngIf="showAllFieldsAnalysisModal" class="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/70 p-3">
@@ -166,6 +170,53 @@
                   <li *ngFor="let action of item.insights.recommendedActions">{{ action }}</li>
                 </ul>
               </div>
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">All Fields AI Chat</p>
+              <span *ngIf="allFieldsChatSending" class="text-xs text-gray-500 dark:text-gray-400">
+                <i class="fas fa-spinner fa-spin mr-1"></i>Responding...
+              </span>
+            </div>
+
+            <div class="mt-2 max-h-52 space-y-2 overflow-y-auto rounded-xl border border-gray-200 bg-white p-2.5 dark:border-slate-700 dark:bg-slate-800/50">
+              <p *ngIf="!allFieldsChatMessages.length" class="text-sm text-gray-500 dark:text-gray-400">
+                Ask follow-up questions about all fields, priorities, and next actions.
+              </p>
+
+              <div *ngFor="let message of allFieldsChatMessages" class="flex" [class.justify-end]="message.role === 'user'" [class.justify-start]="message.role === 'assistant'">
+                <div class="max-w-[88%] rounded-xl px-3 py-2 text-sm leading-6"
+                     [ngStyle]="message.role === 'user' ? {'background-color': '#0f766e', 'color': '#ffffff'} : {'background-color': '#f1f5f9', 'color': '#0f172a'}">
+                  <p class="whitespace-pre-wrap">{{ message.text }}</p>
+                  <p class="mt-1 text-[10px] uppercase tracking-wide" [style.opacity]="0.7">{{ message.createdAt }}</p>
+                </div>
+              </div>
+            </div>
+
+            <div *ngIf="allFieldsChatError" class="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+              {{ allFieldsChatError }}
+            </div>
+
+            <div class="mt-2 flex gap-2">
+              <textarea
+                #allFieldsChatInput
+                rows="2"
+                class="min-h-[42px] flex-1 resize-y rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-teal-600 dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+                placeholder="Ask a follow-up question about all fields..."
+                [disabled]="allFieldsChatSending"
+                (keydown.enter)="onAllFieldsChatEnter($event, allFieldsChatInput)"
+              ></textarea>
+              <button
+                type="button"
+                (click)="sendAllFieldsChatFromInput(allFieldsChatInput)"
+                [disabled]="allFieldsChatSending || !allFieldsChatInput.value.trim()"
+                class="rounded-xl border px-3 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                [style.background-color]="themeService.accent"
+              >
+                Send
+              </button>
             </div>
           </div>
         </div>

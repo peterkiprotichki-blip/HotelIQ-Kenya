@@ -6,8 +6,15 @@ import { Field, FieldsService, FieldStats } from '../../shared/services/fields/f
 import { AuthService } from '../../shared/services/auth/auth.service';
 import { UsersService } from '../../shared/services/users/users.service';
 import { BomoproUser } from '../../shared/interfaces/models';
+import { ReportAiInsights, ReportsService } from '../../shared/services/reports/reports.service';
 
 Chart.register(...registerables);
+
+interface ReportChatMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  time: string;
+}
 
 @Component({
   selector: 'app-reports',
@@ -21,6 +28,13 @@ export class ReportsComponent implements OnInit, OnDestroy {
   agentNameMap: Record<string, string> = {};
   loading = true;
   error = '';
+  reportAnalysis: ReportAiInsights | null = null;
+  reportAnalysisLoading = false;
+  reportAnalysisError = '';
+  reportAnalysisSource: 'gemini' | 'fallback' | '' = '';
+  reportChatMessages: ReportChatMessage[] = [];
+  reportChatSending = false;
+  reportChatError = '';
 
   private statusChart: Chart | null = null;
   private stageChart: Chart | null = null;
@@ -30,6 +44,7 @@ export class ReportsComponent implements OnInit, OnDestroy {
     private fieldsService: FieldsService,
     private authService: AuthService,
     private usersService: UsersService,
+    private reportsService: ReportsService,
     public themeService: ThemeService,
   ) {}
 
@@ -82,6 +97,96 @@ export class ReportsComponent implements OnInit, OnDestroy {
     return this.fields.reduce((sum, field) => sum + (field.notes?.length || 0), 0);
   }
 
+  get hasReportAnalysis(): boolean {
+    return Boolean(this.reportAnalysis);
+  }
+
+  analyzeReport(): void {
+    if (!this.stats) {
+      this.reportAnalysisError = 'Reports are still loading.';
+      return;
+    }
+
+    this.reportAnalysisLoading = true;
+    this.reportAnalysisError = '';
+    this.reportChatError = '';
+
+    this.reportsService.analyzeReport(this.buildReportFocus()).subscribe({
+      next: (response) => {
+        this.reportAnalysis = response.insights;
+        this.reportAnalysisSource = response.source;
+        this.reportAnalysisLoading = false;
+        this.reportChatMessages = [
+          {
+            role: 'assistant',
+            text: response.insights.followUpQuestion || 'Ask a follow-up about this report and I will refine the analysis.',
+            time: this.formatChatTime(new Date()),
+          },
+        ];
+      },
+      error: (err) => {
+        this.reportAnalysisError = err?.error?.message || 'Failed to analyze the report';
+        this.reportAnalysisLoading = false;
+      },
+    });
+  }
+
+  sendReportChat(message: string): void {
+    const prompt = message.trim();
+    if (!prompt) {
+      return;
+    }
+
+    this.reportChatSending = true;
+    this.reportChatError = '';
+    this.reportChatMessages = [
+      ...this.reportChatMessages,
+      {
+        role: 'user',
+        text: prompt,
+        time: this.formatChatTime(new Date()),
+      },
+    ];
+
+    this.reportsService.analyzeReport(this.buildReportFollowUpFocus(prompt)).subscribe({
+      next: (response) => {
+        this.reportAnalysis = response.insights;
+        this.reportAnalysisSource = response.source;
+        this.reportChatMessages = [
+          ...this.reportChatMessages,
+          {
+            role: 'assistant',
+            text: this.formatReportAssistantMessage(response.insights),
+            time: this.formatChatTime(new Date()),
+          },
+        ];
+        this.reportChatSending = false;
+      },
+      error: (err) => {
+        this.reportChatError = err?.error?.message || 'Failed to send report question';
+        this.reportChatSending = false;
+      },
+    });
+  }
+
+  onReportChatEnter(event: Event, input: HTMLTextAreaElement): void {
+    const keyboardEvent = event as KeyboardEvent;
+    if (keyboardEvent.key === 'Enter' && !keyboardEvent.shiftKey) {
+      event.preventDefault();
+      this.sendReportChatFromInput(input);
+    }
+  }
+
+  sendReportChatFromInput(input: HTMLTextAreaElement): void {
+    const message = input.value.trim();
+    if (!message) {
+      return;
+    }
+
+    this.sendReportChat(message);
+    input.value = '';
+  }
+
   private buildAgentBreakdown(fields: Field[]): Array<{ agentId: string; count: number }> {
     const map = new Map<string, number>();
     fields.forEach((field) => {
@@ -108,6 +213,76 @@ export class ReportsComponent implements OnInit, OnDestroy {
     }
 
     return map;
+  }
+
+  private buildReportFocus(userFollowUp?: string): string {
+    const summary = {
+      totalFields: this.stats?.totalFields || 0,
+      statusBreakdown: this.stats?.statusBreakdown,
+      stageBreakdown: this.stats?.stageBreakdown,
+      atRiskFields: this.stats?.atRiskFields || [],
+      totalNotes: this.totalNotes,
+      agentBreakdown: this.agentBreakdown.map((item) => ({
+        agent: this.getAgentLabel(item.agentId),
+        count: item.count,
+      })),
+    };
+
+    return [
+      'Analyze this SmartSeason report dashboard and summarize the overall field health, risks, and priorities.',
+      `Current report summary:\n${JSON.stringify(summary, null, 2)}`,
+      userFollowUp ? `User follow-up question: ${userFollowUp}` : '',
+    ].filter(Boolean).join('\n\n');
+  }
+
+  private buildReportFollowUpFocus(userFollowUp: string): string {
+    const currentAnalysis = this.reportAnalysis
+      ? {
+          summary: this.reportAnalysis.summary,
+          riskLevel: this.reportAnalysis.riskLevel,
+          concerns: this.reportAnalysis.concerns,
+          recommendedActions: this.reportAnalysis.recommendedActions,
+        }
+      : null;
+
+    return [
+      'Continue the SmartSeason report analysis with the new user question.',
+      `Current report summary:\n${JSON.stringify({
+        totalFields: this.stats?.totalFields || 0,
+        statusBreakdown: this.stats?.statusBreakdown,
+        stageBreakdown: this.stats?.stageBreakdown,
+        atRiskFields: this.stats?.atRiskFields || [],
+        totalNotes: this.totalNotes,
+        agentBreakdown: this.agentBreakdown.map((item) => ({
+          agent: this.getAgentLabel(item.agentId),
+          count: item.count,
+        })),
+      }, null, 2)}`,
+      currentAnalysis ? `Current AI summary:\n${JSON.stringify(currentAnalysis, null, 2)}` : '',
+      `User follow-up question: ${userFollowUp}`,
+    ].filter(Boolean).join('\n\n');
+  }
+
+  private formatReportAssistantMessage(insights: ReportAiInsights): string {
+    const parts: string[] = [insights.summary];
+
+    if (insights.concerns.length) {
+      parts.push(`Concerns: ${insights.concerns.join(' ')}`);
+    }
+
+    if (insights.recommendedActions.length) {
+      parts.push(`Actions: ${insights.recommendedActions.join(' ')}`);
+    }
+
+    if (insights.followUpQuestion) {
+      parts.push(`Next: ${insights.followUpQuestion}`);
+    }
+
+    return parts.join('\n\n');
+  }
+
+  private formatChatTime(value: Date): string {
+    return value.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   }
 
   private getAgentLabel(agentId: string): string {

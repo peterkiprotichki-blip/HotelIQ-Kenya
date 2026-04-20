@@ -3,6 +3,22 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { environment } from '../../../../environments/environment';
 import { DashboardStats } from '../../interfaces/models';
+import { FieldStats } from '../fields/fields.service';
+
+export interface ReportAiInsights {
+  summary: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  concerns: string[];
+  recommendedActions: string[];
+  followUpQuestion?: string;
+}
+
+export interface ReportAiAnalysisResponse {
+  stats: FieldStats;
+  insights: ReportAiInsights;
+  source: 'gemini' | 'fallback';
+  model: string;
+}
 
 @Injectable({ providedIn: 'root' })
 export class ReportsService {
@@ -38,5 +54,11 @@ export class ReportsService {
     const params: Record<string, string> = {};
     if (propertyId) params['propertyId'] = propertyId;
     return this.http.get<any>(`${this.apiUrl}/damages`, { params });
+  }
+
+  analyzeReport(focus?: string): Observable<ReportAiAnalysisResponse> {
+    return this.http.post<ReportAiAnalysisResponse>(`${this.apiUrl}/ai/analysis`, {
+      focus,
+    });
   }
 }

@@ -58,6 +58,15 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
           <div class="mt-3 flex flex-wrap gap-2">
             <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i></button>
             <button
+              (click)="analyzeRequested.emit(field)"
+              title="Analyze with AI"
+              aria-label="Analyze with AI"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
+              [style.background-color]="themeService.accent"
+            >
+              <i class="fas fa-wand-magic-sparkles"></i>
+            </button>
+            <button
               (click)="addNoteRequested.emit(field)"
               title="Add Note"
               aria-label="Add Note"
@@ -137,6 +146,15 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
           <div class="col-span-1 flex flex-wrap gap-2">
             <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i></button>
             <button
+              (click)="analyzeRequested.emit(field)"
+              title="Analyze with AI"
+              aria-label="Analyze with AI"
+              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
+              [style.background-color]="themeService.accent"
+            >
+              <i class="fas fa-wand-magic-sparkles"></i>
+            </button>
+            <button
               (click)="addNoteRequested.emit(field)"
               title="Add Note"
               aria-label="Add Note"
@@ -170,6 +188,7 @@ export class FieldsListComponent {
   @Output() deleteRequested = new EventEmitter<Field>();
   @Output() addNoteRequested = new EventEmitter<Field>();
   @Output() viewRequested = new EventEmitter<Field>();
+  @Output() analyzeRequested = new EventEmitter<Field>();
 
   constructor(public readonly themeService: ThemeService) {}
 

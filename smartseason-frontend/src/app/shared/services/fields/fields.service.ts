@@ -42,6 +42,21 @@ export interface FieldStats {
   }>;
 }
 
+export interface FieldAiInsights {
+  summary: string;
+  riskLevel: 'low' | 'medium' | 'high';
+  concerns: string[];
+  recommendedActions: string[];
+  followUpQuestion?: string;
+}
+
+export interface FieldAiInsightsResponse {
+  field: Field;
+  insights: FieldAiInsights;
+  source: 'gemini' | 'fallback';
+  model: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class FieldsService {
   private readonly apiUrl = `${environment.apiUrl}/fields`;
@@ -81,6 +96,12 @@ export class FieldsService {
     location?: string;
   }): Observable<Field> {
     return this.http.put<Field>(`${this.apiUrl}/${id}`, payload);
+  }
+
+  analyze(id: string, focus?: string): Observable<FieldAiInsightsResponse> {
+    return this.http.post<FieldAiInsightsResponse>(`${this.apiUrl}/${id}/ai/insights`, {
+      focus,
+    });
   }
 
   remove(id: string): Observable<{ message: string }> {

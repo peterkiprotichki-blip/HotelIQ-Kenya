@@ -1,16 +1,17 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
-import { FieldsService, Field, FieldStage } from '../../shared/services/fields/fields.service';
+import { forkJoin } from 'rxjs';
 import { AuthService } from '../../shared/services/auth/auth.service';
-import { UsersService } from '../../shared/services/users/users.service';
-import { BomoproUser } from '../../shared/interfaces/models';
-import { FieldCreateModalComponent, CreateFieldFormValue } from './field-create-modal.component';
-import { FieldsListComponent } from './fields-list.component';
-import { ThemeService } from '../../shared/services/theme/theme.service';
-import { FieldNoteModalComponent, CreateFieldNoteValue } from './field-note-modal.component';
 import { ConfirmationService } from '../../shared/services/confirmation.service';
 import { NotificationService } from '../../shared/services/notification.service';
+import { ThemeService } from '../../shared/services/theme/theme.service';
+import { UsersService } from '../../shared/services/users/users.service';
+import { BomoproUser } from '../../shared/interfaces/models';
+import { FieldsService, Field, FieldAiInsights, FieldStage } from '../../shared/services/fields/fields.service';
+import { FieldCreateModalComponent, CreateFieldFormValue } from './field-create-modal.component';
+import { FieldNoteModalComponent, CreateFieldNoteValue } from './field-note-modal.component';
 import { FieldViewModalComponent } from './field-view-modal.component';
+import { FieldsListComponent } from './fields-list.component';
 
 @Component({
   selector: 'app-fields',
@@ -26,14 +27,28 @@ export class FieldsComponent implements OnInit {
   creatingField = false;
   creatingNote = false;
   savingField = false;
+  analyzingField = false;
+  analyzingAllFields = false;
   error = '';
+  aiError = '';
+  allFieldsAiError = '';
   showCreateModal = false;
   showNoteModal = false;
   showViewModal = false;
+  showAllFieldsAnalysisModal = false;
   selectedFieldForNote: Field | null = null;
   selectedFieldForEdit: Field | null = null;
   selectedFieldForView: Field | null = null;
   fieldEditInitialValue: Partial<CreateFieldFormValue> | null = null;
+  fieldAiAnalysis: FieldAiInsights | null = null;
+  fieldAiSource: 'gemini' | 'fallback' | '' = '';
+  allFieldsAnalysis: Array<{
+    field: Field;
+    insights: FieldAiInsights;
+    source: 'gemini' | 'fallback';
+    model: string;
+  }> = [];
+  allFieldsAnalysisSummary = '';
 
   updateDraft: Record<string, { stage: FieldStage; note: string }> = {};
 
@@ -204,36 +219,121 @@ export class FieldsComponent implements OnInit {
       return;
     }
 
-    this.confirmationService.confirm({
-      title: 'Delete Field',
-      message: `Delete field "${field.name}"? This action cannot be undone.`,
-      confirmText: 'Delete',
-      cancelText: 'Cancel',
-    }).then((confirmed) => {
-      if (!confirmed) {
-        return;
-      }
+    this.confirmationService
+      .confirm({
+        title: 'Delete Field',
+        message: `Delete field "${field.name}"? This action cannot be undone.`,
+        confirmText: 'Delete',
+        cancelText: 'Cancel',
+      })
+      .then((confirmed) => {
+        if (!confirmed) {
+          return;
+        }
 
-      this.fieldsService.remove(field._id).subscribe({
-        next: () => {
-          this.loadFields();
-          this.notificationService.success('Field deleted successfully');
-        },
-        error: (err) => {
-          this.error = err?.error?.message || 'Failed to delete field';
-        },
+        this.fieldsService.remove(field._id).subscribe({
+          next: () => {
+            this.loadFields();
+            this.notificationService.success('Field deleted successfully');
+          },
+          error: (err) => {
+            this.error = err?.error?.message || 'Failed to delete field';
+          },
+        });
       });
-    });
   }
 
   onViewField(field: Field): void {
     this.selectedFieldForView = field;
     this.showViewModal = true;
+    this.fieldAiAnalysis = null;
+    this.fieldAiSource = '';
+    this.aiError = '';
+  }
+
+  onAnalyzeField(field: Field): void {
+    this.selectedFieldForView = field;
+    this.showViewModal = true;
+    this.fieldAiAnalysis = null;
+    this.fieldAiSource = '';
+    this.aiError = '';
+    this.analyzeSelectedField();
+  }
+
+  analyzeAllFields(): void {
+    if (this.analyzingAllFields || !this.fields.length) {
+      return;
+    }
+
+    this.analyzingAllFields = true;
+    this.allFieldsAiError = '';
+    this.allFieldsAnalysis = [];
+    this.allFieldsAnalysisSummary = '';
+    this.showAllFieldsAnalysisModal = true;
+
+    forkJoin(this.fields.map((field) => this.fieldsService.analyze(field._id, 'Give me the top risks and next actions for this field.'))).subscribe({
+      next: (results) => {
+        this.allFieldsAnalysis = results
+          .map((result) => ({
+            field: result.field,
+            insights: result.insights,
+            source: result.source,
+            model: result.model,
+          }))
+          .sort((left, right) => this.riskRank(right.insights.riskLevel) - this.riskRank(left.insights.riskLevel));
+
+        const riskCounts = this.allFieldsAnalysis.reduce(
+          (accumulator, item) => {
+            accumulator[item.insights.riskLevel] += 1;
+            return accumulator;
+          },
+          { low: 0, medium: 0, high: 0 },
+        );
+
+        this.allFieldsAnalysisSummary = `Analyzed ${this.allFieldsAnalysis.length} fields. ${riskCounts.high} high risk, ${riskCounts.medium} medium risk, and ${riskCounts.low} low risk.`;
+        this.analyzingAllFields = false;
+        this.notificationService.success('All fields analysis complete');
+      },
+      error: (err) => {
+        this.analyzingAllFields = false;
+        this.allFieldsAiError = err?.error?.message || 'Failed to analyze all fields';
+      },
+    });
+  }
+
+  closeAllFieldsAnalysis(): void {
+    this.showAllFieldsAnalysisModal = false;
+    this.analyzingAllFields = false;
   }
 
   onViewModalClosed(): void {
     this.showViewModal = false;
     this.selectedFieldForView = null;
+    this.fieldAiAnalysis = null;
+    this.fieldAiSource = '';
+    this.aiError = '';
+    this.analyzingField = false;
+  }
+
+  analyzeSelectedField(): void {
+    if (!this.selectedFieldForView || this.analyzingField) {
+      return;
+    }
+
+    this.analyzingField = true;
+    this.aiError = '';
+    this.fieldsService.analyze(this.selectedFieldForView._id, 'Give me the top risks and next actions for this field.').subscribe({
+      next: (res) => {
+        this.fieldAiAnalysis = res.insights;
+        this.fieldAiSource = res.source;
+        this.analyzingField = false;
+        this.notificationService.success('AI analysis complete');
+      },
+      error: (err) => {
+        this.analyzingField = false;
+        this.aiError = err?.error?.message || 'Failed to analyze field';
+      },
+    });
   }
 
   onModalClosed(): void {
@@ -262,5 +362,38 @@ export class FieldsComponent implements OnInit {
   getAgentName(agentId: string): string {
     const match = this.agents.find((agent) => agent._id === agentId);
     return match ? match.name : 'Unassigned';
+  }
+
+  riskRank(level: 'low' | 'medium' | 'high'): number {
+    if (level === 'high') {
+      return 3;
+    }
+
+    if (level === 'medium') {
+      return 2;
+    }
+
+    return 1;
+  }
+
+  riskStyle(riskLevel: 'low' | 'medium' | 'high'): Record<string, string> {
+    if (riskLevel === 'high') {
+      return {
+        'background-color': '#fee2e2',
+        color: '#991b1b',
+      };
+    }
+
+    if (riskLevel === 'medium') {
+      return {
+        'background-color': '#fef3c7',
+        color: '#92400e',
+      };
+    }
+
+    return {
+      'background-color': '#dcfce7',
+      color: '#166534',
+    };
   }
 }

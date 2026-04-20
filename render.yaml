@@ -8,8 +8,8 @@ services:
     runtime: node
     plan: free
     rootDir: smartseason-backend
-    buildCommand: node -e "const fs=require('fs'); const path=require('path'); const cwd=process.cwd(); const candidates=['scripts/render-build.js','smartseason-backend/scripts/render-build.js']; const script=candidates.map((candidate)=>path.resolve(cwd,candidate)).find((candidate)=>fs.existsSync(candidate)); if(!script){console.error('render-build.js not found'); process.exit(1);} require(script);"
-    startCommand: node -e "const fs=require('fs'); const path=require('path'); const cwd=process.cwd(); const candidates=['scripts/render-start.js','smartseason-backend/scripts/render-start.js']; const script=candidates.map((candidate)=>path.resolve(cwd,candidate)).find((candidate)=>fs.existsSync(candidate)); if(!script){console.error('render-start.js not found'); process.exit(1);} require(script);"
+    buildCommand: node scripts/render-build.js
+    startCommand: node scripts/render-start.js
     envVars:
       - key: NODE_VERSION
         value: 20
@@ -32,7 +32,7 @@ services:
     name: smartseason-frontend
     runtime: static
     rootDir: smartseason-frontend
-    buildCommand: node -e "const fs=require('fs'); const path=require('path'); const cwd=process.cwd(); const candidates=['scripts/render-build.js','smartseason-frontend/scripts/render-build.js']; const script=candidates.map((candidate)=>path.resolve(cwd,candidate)).find((candidate)=>fs.existsSync(candidate)); if(!script){console.error('render-build.js not found'); process.exit(1);} require(script);"
+    buildCommand: node scripts/render-build.js
     staticPublishPath: dist/smartseason-frontend/browser
     envVars:
       - key: NODE_VERSION

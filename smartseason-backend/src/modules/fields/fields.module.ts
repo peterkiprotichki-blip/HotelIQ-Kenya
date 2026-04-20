@@ -1,13 +1,11 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
 import { FieldsController } from './fields.controller';
 import { FieldsService } from './fields.service';
-import { Field, FieldSchema } from './schemas/field.schema';
+import { FieldAiService } from './field-ai.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Field.name, schema: FieldSchema }])],
   controllers: [FieldsController],
-  providers: [FieldsService],
+  providers: [FieldsService, FieldAiService],
   exports: [FieldsService],
 })
 export class FieldsModule {}

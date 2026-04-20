@@ -4,11 +4,16 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { AddFieldUpdateDto, CreateFieldDto, UpdateFieldDto } from './dto/field.dto';
+import { FieldAiInsightDto } from './dto/field-ai.dto';
+import { FieldAiService } from './field-ai.service';
 
 @Controller('fields')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FieldsController {
-  constructor(private readonly fieldsService: FieldsService) {}
+  constructor(
+    private readonly fieldsService: FieldsService,
+    private readonly fieldAiService: FieldAiService,
+  ) {}
 
   @Post()
   @Roles('super_admin', 'admin', 'manager')
@@ -44,6 +49,12 @@ export class FieldsController {
   @Roles('super_admin', 'admin', 'manager', 'agent')
   addUpdate(@Param('id') id: string, @Body() dto: AddFieldUpdateDto, @Req() req) {
     return this.fieldsService.addUpdate(id, dto, req.user);
+  }
+
+  @Post(':id/ai/insights')
+  @Roles('super_admin', 'admin', 'manager', 'agent')
+  getAiInsights(@Param('id') id: string, @Body() dto: FieldAiInsightDto) {
+    return this.fieldAiService.generateFieldInsights(id, dto?.focus);
   }
 
   @Delete(':id')

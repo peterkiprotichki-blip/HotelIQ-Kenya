@@ -22,7 +22,7 @@ export class TenantsController {
   @Post()
   async create(@Body() dto: CreateTenantDto, @Req() req) {
     const tenant = await this.tenantsService.create(dto, req.user.sub);
-    const tenantId = tenant._id.toString();
+    const tenantId = tenant.id;
     await this.authService.addUserToTenant(req.user.sub, tenantId, req.user);
     return tenant;
   }

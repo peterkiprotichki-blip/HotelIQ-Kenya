@@ -1,43 +1,56 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Field, FieldStage, FieldStatus } from './schemas/field.schema';
+import { PrismaService } from '../../prisma/prisma.service';
+import { mapRecord, mapRecords } from '../../prisma/prisma-mappers';
 import { AddFieldUpdateDto, CreateFieldDto, UpdateFieldDto } from './dto/field.dto';
+import { FieldStage, FieldStatus } from './schemas/field.schema';
 
 @Injectable()
 export class FieldsService {
-  constructor(@InjectModel(Field.name) private readonly fieldModel: Model<Field>) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(dto: CreateFieldDto, userId: string): Promise<Field> {
-    const now = new Date();
-    const field = new this.fieldModel({
-      ...dto,
-      plantingDate: new Date(dto.plantingDate),
-      expectedHarvestDate: dto.expectedHarvestDate ? new Date(dto.expectedHarvestDate) : null,
-      currentStage: dto.currentStage || FieldStage.PLANTED,
-      notes: [],
-      updatedBy: userId,
-      updatedAt: now,
+  async create(dto: CreateFieldDto, userId: string) {
+    const currentStage = dto.currentStage || FieldStage.planted;
+    const expectedHarvestDate = dto.expectedHarvestDate ? new Date(dto.expectedHarvestDate) : null;
+    const field = await this.prisma.field.create({
+      data: {
+        name: dto.name,
+        cropType: dto.cropType,
+        plantingDate: new Date(dto.plantingDate),
+        expectedHarvestDate,
+        currentStage,
+        assignedAgentId: dto.assignedAgentId,
+        location: dto.location || '',
+        notes: [],
+        updatedBy: userId,
+        status: this.computeStatus(currentStage, expectedHarvestDate, new Date()),
+      },
     });
 
-    field.status = this.computeStatus(field.currentStage, field.expectedHarvestDate, now);
-    await field.save();
-    return field;
+    return mapRecord(field);
   }
 
-  async findAll(user: { role: string; sub: string }): Promise<Field[]> {
-    const filter: any = { isDeleted: { $ne: true } };
+  async findAll(user: { role: string; sub: string }) {
+    const where: any = { isDeleted: false };
     if (user.role === 'agent') {
-      filter.assignedAgentId = user.sub;
+      where.assignedAgentId = user.sub;
     }
 
-    const fields = await this.fieldModel.find(filter).sort({ createdAt: -1 });
-    return fields.map((field) => this.refreshStatus(field));
+    const fields = await this.prisma.field.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const refreshed = [] as any[];
+    for (const field of fields) {
+      refreshed.push(await this.refreshStatus(field));
+    }
+
+    return mapRecords(refreshed);
   }
 
-  async findById(id: string, user: { role: string; sub: string }): Promise<Field> {
-    const field = await this.fieldModel.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!field) {
+  async findById(id: string, user: { role: string; sub: string }) {
+    const field = await this.prisma.field.findUnique({ where: { id } });
+    if (!field || field.isDeleted) {
       throw new NotFoundException('Field not found');
     }
 
@@ -45,34 +58,41 @@ export class FieldsService {
       throw new NotFoundException('Field not found');
     }
 
-    return this.refreshStatus(field);
+    return mapRecord(await this.refreshStatus(field));
   }
 
-  async update(id: string, dto: UpdateFieldDto, userId: string): Promise<Field> {
-    const field = await this.fieldModel.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!field) {
+  async update(id: string, dto: UpdateFieldDto, userId: string) {
+    const field = await this.prisma.field.findUnique({ where: { id } });
+    if (!field || field.isDeleted) {
       throw new NotFoundException('Field not found');
     }
 
-    if (dto.name !== undefined) field.name = dto.name;
-    if (dto.cropType !== undefined) field.cropType = dto.cropType;
-    if (dto.plantingDate !== undefined) field.plantingDate = new Date(dto.plantingDate);
-    if (dto.currentStage !== undefined) field.currentStage = dto.currentStage;
-    if (dto.expectedHarvestDate !== undefined) field.expectedHarvestDate = dto.expectedHarvestDate ? new Date(dto.expectedHarvestDate) : null;
-    if (dto.assignedAgentId !== undefined) field.assignedAgentId = dto.assignedAgentId;
-    if (dto.location !== undefined) field.location = dto.location;
+    const currentStage = dto.currentStage ?? field.currentStage;
+    const expectedHarvestDate = dto.expectedHarvestDate !== undefined
+      ? (dto.expectedHarvestDate ? new Date(dto.expectedHarvestDate) : null)
+      : field.expectedHarvestDate;
 
-    field.updatedBy = userId;
-    field.updatedAt = new Date();
-    field.status = this.computeStatus(field.currentStage, field.expectedHarvestDate, field.updatedAt);
+    const updated = await this.prisma.field.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined ? { name: dto.name } : {}),
+        ...(dto.cropType !== undefined ? { cropType: dto.cropType } : {}),
+        ...(dto.plantingDate !== undefined ? { plantingDate: new Date(dto.plantingDate) } : {}),
+        ...(dto.currentStage !== undefined ? { currentStage: dto.currentStage } : {}),
+        ...(dto.expectedHarvestDate !== undefined ? { expectedHarvestDate } : {}),
+        ...(dto.assignedAgentId !== undefined ? { assignedAgentId: dto.assignedAgentId } : {}),
+        ...(dto.location !== undefined ? { location: dto.location } : {}),
+        updatedBy: userId,
+        status: this.computeStatus(currentStage, expectedHarvestDate, new Date()),
+      },
+    });
 
-    await field.save();
-    return field;
+    return mapRecord(updated);
   }
 
-  async addUpdate(id: string, dto: AddFieldUpdateDto, user: { role: string; sub: string; name?: string }): Promise<Field> {
-    const field = await this.fieldModel.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!field) {
+  async addUpdate(id: string, dto: AddFieldUpdateDto, user: { role: string; sub: string; name?: string }) {
+    const field = await this.prisma.field.findUnique({ where: { id } });
+    if (!field || field.isDeleted) {
       throw new NotFoundException('Field not found');
     }
 
@@ -80,54 +100,49 @@ export class FieldsService {
       throw new NotFoundException('Field not found');
     }
 
-    if (dto.stage) {
-      field.currentStage = dto.stage;
-    }
-
-    const actor = user.name || user.sub;
+    const currentStage = dto.stage || field.currentStage;
     const timestamp = new Date().toISOString().slice(0, 10);
-    field.notes = field.notes || [];
-    field.notes.unshift(`${timestamp} - ${actor}: ${dto.note}`);
-    field.notes = field.notes.slice(0, 50);
+    const notes = [
+      `${timestamp} - ${user.name || user.sub}: ${dto.note}`,
+      ...(field.notes || []),
+    ].slice(0, 50);
 
-    field.updatedBy = user.sub;
-    field.updatedAt = new Date();
-    field.status = this.computeStatus(field.currentStage, field.expectedHarvestDate, field.updatedAt);
+    const updated = await this.prisma.field.update({
+      where: { id },
+      data: {
+        ...(dto.stage ? { currentStage: dto.stage } : {}),
+        notes,
+        updatedBy: user.sub,
+        status: this.computeStatus(currentStage, field.expectedHarvestDate, new Date()),
+      },
+    });
 
-    await field.save();
-    return field;
+    return mapRecord(updated);
   }
 
-  async remove(id: string): Promise<{ message: string }> {
-    const field = await this.fieldModel.findOne({ _id: id, isDeleted: { $ne: true } });
-    if (!field) {
+  async remove(id: string) {
+    const field = await this.prisma.field.findUnique({ where: { id } });
+    if (!field || field.isDeleted) {
       throw new NotFoundException('Field not found');
     }
 
-    field.isDeleted = true;
-    await field.save();
+    await this.prisma.field.update({
+      where: { id },
+      data: { isDeleted: true },
+    });
+
     return { message: 'Field deleted successfully' };
   }
 
   async getStats(user: { role: string; sub: string }) {
     const fields = await this.findAll(user);
-    const statusBreakdown = {
-      active: 0,
-      atRisk: 0,
-      completed: 0,
-    };
+    const statusBreakdown = { active: 0, atRisk: 0, completed: 0 };
+    const stageBreakdown = { planted: 0, growing: 0, ready: 0, harvested: 0 };
 
-    const stageBreakdown = {
-      planted: 0,
-      growing: 0,
-      ready: 0,
-      harvested: 0,
-    };
-
-    for (const field of fields) {
-      if (field.status === FieldStatus.ACTIVE) statusBreakdown.active += 1;
-      if (field.status === FieldStatus.AT_RISK) statusBreakdown.atRisk += 1;
-      if (field.status === FieldStatus.COMPLETED) statusBreakdown.completed += 1;
+    for (const field of fields as any[]) {
+      if (field.status === FieldStatus.active) statusBreakdown.active += 1;
+      if (field.status === FieldStatus.at_risk) statusBreakdown.atRisk += 1;
+      if (field.status === FieldStatus.completed) statusBreakdown.completed += 1;
 
       stageBreakdown[field.currentStage] += 1;
     }
@@ -136,28 +151,33 @@ export class FieldsService {
       totalFields: fields.length,
       statusBreakdown,
       stageBreakdown,
-      atRiskFields: fields.filter((f) => f.status === FieldStatus.AT_RISK).map((f) => ({
-        _id: f._id,
-        name: f.name,
-        cropType: f.cropType,
-        currentStage: f.currentStage,
-        expectedHarvestDate: f.expectedHarvestDate,
-      })),
+      atRiskFields: (fields as any[])
+        .filter((f) => f.status === FieldStatus.at_risk)
+        .map((f) => ({
+          _id: f._id,
+          name: f.name,
+          cropType: f.cropType,
+          currentStage: f.currentStage,
+          expectedHarvestDate: f.expectedHarvestDate,
+        })),
     };
   }
 
-  private refreshStatus(field: Field): Field {
+  private async refreshStatus(field: any) {
     const computed = this.computeStatus(field.currentStage, field.expectedHarvestDate, field.updatedAt || field.createdAt);
     if (computed !== field.status) {
-      field.status = computed;
-      field.save();
+      field = await this.prisma.field.update({
+        where: { id: field.id },
+        data: { status: computed },
+      });
     }
+
     return field;
   }
 
-  private computeStatus(stage: FieldStage, expectedHarvestDate?: Date | null, lastUpdated?: Date | null): FieldStatus {
-    if (stage === FieldStage.HARVESTED) {
-      return FieldStatus.COMPLETED;
+  private computeStatus(stage: FieldStage, expectedHarvestDate?: Date | null, lastUpdated?: Date | null) {
+    if (stage === FieldStage.harvested) {
+      return FieldStatus.completed;
     }
 
     const now = Date.now();
@@ -166,17 +186,17 @@ export class FieldsService {
     if (lastUpdated) {
       const stale = now - new Date(lastUpdated).getTime() > staleThresholdMs;
       if (stale) {
-        return FieldStatus.AT_RISK;
+        return FieldStatus.at_risk;
       }
     }
 
     if (expectedHarvestDate) {
       const daysToHarvest = (new Date(expectedHarvestDate).getTime() - now) / (24 * 60 * 60 * 1000);
       if (daysToHarvest <= 7) {
-        return FieldStatus.AT_RISK;
+        return FieldStatus.at_risk;
       }
     }
 
-    return FieldStatus.ACTIVE;
+    return FieldStatus.active;
   }
 }

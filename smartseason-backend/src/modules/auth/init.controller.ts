@@ -1,8 +1,6 @@
 import { BadRequestException, Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
 import * as bcrypt from 'bcryptjs';
-import { AuthService } from './auth.service';
+import { PrismaService } from '../../prisma/prisma.service';
 import {
   ALL_PERMISSIONS,
   DEFAULT_ADMIN_PERMISSIONS,
@@ -10,7 +8,6 @@ import {
   DEFAULT_MANAGER_PERMISSIONS,
   DEFAULT_TENANT_PERMISSIONS,
   Permission,
-  RentiumUser,
   RentiumUserRole,
 } from './schemas/rentium-user.schema';
 
@@ -28,11 +25,7 @@ interface SeedRequestBody {
 
 @Controller('init')
 export class InitController {
-  constructor(
-    private readonly authService: AuthService,
-    @InjectModel(RentiumUser.name)
-    private readonly userModel: Model<RentiumUser>,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   @Post('seed')
   @HttpCode(HttpStatus.OK)
@@ -41,20 +34,24 @@ export class InitController {
 
     const seededUsers = [];
     for (const user of users) {
-      const permissions = user.permissions?.length
-        ? user.permissions
-        : this.getDefaultPermissions(user.role);
+      const permissions = user.permissions?.length ? user.permissions : this.getDefaultPermissions(user.role);
+      const hashedPassword = await bcrypt.hash(user.password, 10);
 
-      const existing = await this.userModel.findOne({ email: user.email });
+      const existing = await this.prisma.user.findUnique({ where: { email: user.email } });
       if (existing) {
-        existing.name = user.name;
-        existing.password = await bcrypt.hash(user.password, 10);
-        existing.role = user.role;
-        existing.permissions = permissions;
-        existing.isActive = true;
-        existing.isApproved = true;
-        existing.isEmailVerified = true;
-        await existing.save();
+        await this.prisma.user.update({
+          where: { email: user.email },
+          data: {
+            name: user.name,
+            password: hashedPassword,
+            role: user.role,
+            permissions,
+            isActive: true,
+            isApproved: true,
+            isEmailVerified: true,
+            isDeleted: false,
+          },
+        });
 
         seededUsers.push({
           email: user.email,
@@ -64,12 +61,17 @@ export class InitController {
         continue;
       }
 
-      await this.authService.register({
-        name: user.name,
-        email: user.email,
-        password: user.password,
-        role: user.role,
-        permissions,
+      await this.prisma.user.create({
+        data: {
+          name: user.name,
+          email: user.email,
+          password: hashedPassword,
+          role: user.role,
+          permissions,
+          isActive: true,
+          isApproved: true,
+          isEmailVerified: true,
+        },
       });
 
       seededUsers.push({
@@ -108,8 +110,6 @@ export class InitController {
     if (!Array.isArray(parsed) || parsed.length === 0) {
       throw new BadRequestException('SEED_USERS_JSON must be a non-empty JSON array.');
     }
-
-    const allowedRoles = new Set(Object.values(RentiumUserRole));
 
     return this.validateSeedUsers(parsed as SeedUserConfig[]);
   }
@@ -158,15 +158,15 @@ export class InitController {
   }
 
   private getDefaultPermissions(role: RentiumUserRole): Permission[] {
-    if (role === RentiumUserRole.ADMIN || role === RentiumUserRole.SUPER_ADMIN) {
+    if (role === RentiumUserRole.admin || role === RentiumUserRole.super_admin) {
       return [...DEFAULT_ADMIN_PERMISSIONS];
     }
 
-    if (role === RentiumUserRole.MANAGER) {
+    if (role === RentiumUserRole.manager) {
       return [...DEFAULT_MANAGER_PERMISSIONS];
     }
 
-    if (role === RentiumUserRole.TENANT) {
+    if (role === RentiumUserRole.tenant) {
       return [...DEFAULT_TENANT_PERMISSIONS];
     }
 

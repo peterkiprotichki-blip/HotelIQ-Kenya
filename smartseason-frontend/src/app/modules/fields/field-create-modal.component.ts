@@ -41,44 +41,69 @@ export type FieldFormMode = 'create' | 'edit';
         </div>
 
         <div class="mx-auto grid w-full max-w-lg grid-cols-1 gap-3">
-          <input
-            [(ngModel)]="form.name"
-            placeholder="Field name"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
-          />
-          <input
-            [(ngModel)]="form.cropType"
-            placeholder="Crop type"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
-          />
+          <div>
+            <label for="field-name" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Field Name</label>
+            <input
+              id="field-name"
+              [(ngModel)]="form.name"
+              placeholder="Field name"
+              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+            />
+          </div>
 
-          <select
-            [(ngModel)]="form.assignedAgentId"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
-          >
-            <option value="">Select field agent</option>
-            <option *ngFor="let agent of agents" [value]="agent._id">{{ agent.name }} ({{ agent.email }})</option>
-          </select>
+          <div>
+            <label for="crop-type" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Crop Type</label>
+            <input
+              id="crop-type"
+              [(ngModel)]="form.cropType"
+              placeholder="Crop type"
+              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+            />
+          </div>
 
-          <input
-            [(ngModel)]="form.location"
-            placeholder="Location"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
-          />
+          <div>
+            <label for="assigned-agent" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Field Agent</label>
+            <select
+              id="assigned-agent"
+              [(ngModel)]="form.assignedAgentId"
+              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+            >
+              <option value="">Select field agent</option>
+              <option *ngFor="let agent of agents" [value]="agent._id">{{ agent.name }} ({{ agent.email }})</option>
+            </select>
+          </div>
 
-          <input
-            [(ngModel)]="form.plantingDate"
-            type="date"
-            title="Planting Date"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
-          />
+          <div>
+            <label for="field-location" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Location</label>
+            <input
+              id="field-location"
+              [(ngModel)]="form.location"
+              placeholder="Location"
+              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+            />
+          </div>
 
-          <input
-            [(ngModel)]="form.expectedHarvestDate"
-            type="date"
-            title="Expected Harvest Date"
-            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
-          />
+          <div>
+            <label for="planting-date" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Planting Date</label>
+            <input
+              id="planting-date"
+              [(ngModel)]="form.plantingDate"
+              type="date"
+              title="Planting Date"
+              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+            />
+          </div>
+
+          <div>
+            <label for="expected-harvest-date" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Expected Harvest Date</label>
+            <input
+              id="expected-harvest-date"
+              [(ngModel)]="form.expectedHarvestDate"
+              type="date"
+              title="Expected Harvest Date"
+              class="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-900 dark:text-gray-100"
+            />
+          </div>
         </div>
 
         <div class="mt-5 flex justify-end gap-2">

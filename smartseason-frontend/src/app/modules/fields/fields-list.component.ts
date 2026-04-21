@@ -34,9 +34,17 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
               <span *ngIf="field.notes.length" class="rounded-full bg-gray-100 px-2 py-0.5 font-semibold text-gray-600 dark:bg-slate-700 dark:text-gray-200">{{ field.notes.length }}</span>
             </div>
             <div *ngIf="field.notes.length; else mobileNoNotes" class="max-h-28 overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-900/40">
-              <div *ngFor="let note of field.notes; let last = last" class="py-1 text-xs text-gray-600 dark:text-gray-300" [class.border-b]="!last" [class.border-gray-200]="!last" [class.dark:border-slate-700]="!last">
+              <div *ngFor="let note of field.notes; let i = index; let last = last" class="py-1 text-xs text-gray-600 dark:text-gray-300" [class.border-b]="!last" [class.border-gray-200]="!last" [class.dark:border-slate-700]="!last">
                 <span class="block font-medium text-gray-700 dark:text-gray-200">{{ noteSummary(note) }}</span>
                 <span class="mt-0.5 block whitespace-pre-wrap text-[11px] leading-5 text-gray-500 dark:text-gray-400">{{ noteBody(note) }}</span>
+                <button
+                  type="button"
+                  (click)="editNoteRequested.emit({ field: field, noteIndex: i, note: noteBody(note) })"
+                  class="mt-1 inline-flex items-center gap-1 rounded border border-gray-300 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"
+                >
+                  <i class="fas fa-pen"></i>
+                  Edit
+                </button>
               </div>
             </div>
             <ng-template #mobileNoNotes>
@@ -56,27 +64,27 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
           </select>
 
           <div class="mt-3 flex flex-wrap gap-2">
-            <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i></button>
+            <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i><span>View</span></button>
             <button
               (click)="analyzeRequested.emit(field)"
               title="Analyze with AI"
               aria-label="Analyze with AI"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
+              class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-white"
               [style.background-color]="themeService.accent"
             >
-              <i class="fas fa-wand-magic-sparkles"></i>
+              <i class="fas fa-wand-magic-sparkles"></i><span>Analyze</span>
             </button>
             <button
               (click)="addNoteRequested.emit(field)"
               title="Add Note"
               aria-label="Add Note"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
+              class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-white"
               [style.background-color]="themeService.accent"
             >
-              <i class="fas fa-note-sticky"></i>
+              <i class="fas fa-note-sticky"></i><span>Note</span>
             </button>
-            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" title="Edit" aria-label="Edit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-pen"></i></button>
-            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" title="Delete" aria-label="Delete" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i></button>
+            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" title="Edit" aria-label="Edit" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-pen"></i><span>Field</span></button>
+            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" title="Delete" aria-label="Delete" class="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i><span>Delete</span></button>
           </div>
         </div>
       </div>
@@ -135,36 +143,44 @@ import { ThemeService } from '../../shared/services/theme/theme.service';
 
           <div class="col-span-2 text-xs text-gray-600 dark:text-gray-300">
             <div *ngIf="field.notes.length; else noNotes" class="max-h-28 overflow-y-auto rounded-lg border border-gray-100 bg-gray-50 p-2 dark:border-slate-700 dark:bg-slate-900/40">
-              <div *ngFor="let note of field.notes; let last = last" class="py-1" [class.border-b]="!last" [class.border-gray-200]="!last" [class.dark:border-slate-700]="!last">
+              <div *ngFor="let note of field.notes; let i = index; let last = last" class="py-1" [class.border-b]="!last" [class.border-gray-200]="!last" [class.dark:border-slate-700]="!last">
                 <span class="block font-medium text-gray-700 dark:text-gray-200">{{ noteSummary(note) }}</span>
                 <span class="mt-0.5 block whitespace-pre-wrap text-[11px] leading-5 text-gray-500 dark:text-gray-400">{{ noteBody(note) }}</span>
+                <button
+                  type="button"
+                  (click)="editNoteRequested.emit({ field: field, noteIndex: i, note: noteBody(note) })"
+                  class="mt-1 inline-flex items-center gap-1 rounded border border-gray-300 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"
+                >
+                  <i class="fas fa-pen"></i>
+                  Edit
+                </button>
               </div>
             </div>
             <ng-template #noNotes>No notes yet</ng-template>
           </div>
 
           <div class="col-span-1 flex flex-wrap gap-2">
-            <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i></button>
+            <button (click)="viewRequested.emit(field)" title="View" aria-label="View" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-eye"></i><span>View</span></button>
             <button
               (click)="analyzeRequested.emit(field)"
               title="Analyze with AI"
               aria-label="Analyze with AI"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
+              class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-white"
               [style.background-color]="themeService.accent"
             >
-              <i class="fas fa-wand-magic-sparkles"></i>
+              <i class="fas fa-wand-magic-sparkles"></i><span>Analyze</span>
             </button>
             <button
               (click)="addNoteRequested.emit(field)"
               title="Add Note"
               aria-label="Add Note"
-              class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold text-white"
+              class="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-semibold text-white"
               [style.background-color]="themeService.accent"
             >
-              <i class="fas fa-note-sticky"></i>
+              <i class="fas fa-note-sticky"></i><span>Note</span>
             </button>
-            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" title="Edit" aria-label="Edit" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-gray-300 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-pen"></i></button>
-            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" title="Delete" aria-label="Delete" class="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-red-300 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i></button>
+            <button *ngIf="isAdminLike" (click)="editRequested.emit(field)" title="Edit" aria-label="Edit" class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-2 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700"><i class="fas fa-pen"></i><span>Field</span></button>
+            <button *ngIf="isAdminLike" (click)="deleteRequested.emit(field)" title="Delete" aria-label="Delete" class="inline-flex items-center gap-1 rounded-lg border border-red-300 px-2 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 dark:border-red-700 dark:text-red-300 dark:hover:bg-red-900/30"><i class="fas fa-trash"></i><span>Delete</span></button>
           </div>
         </div>
       </div>
@@ -187,6 +203,7 @@ export class FieldsListComponent {
   @Output() editRequested = new EventEmitter<Field>();
   @Output() deleteRequested = new EventEmitter<Field>();
   @Output() addNoteRequested = new EventEmitter<Field>();
+  @Output() editNoteRequested = new EventEmitter<{ field: Field; noteIndex: number; note: string }>();
   @Output() viewRequested = new EventEmitter<Field>();
   @Output() analyzeRequested = new EventEmitter<Field>();
 

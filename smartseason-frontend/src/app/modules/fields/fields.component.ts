@@ -47,6 +47,8 @@ export class FieldsComponent implements OnInit, OnDestroy {
   showViewModal = false;
   showAllFieldsAnalysisModal = false;
   selectedFieldForNote: Field | null = null;
+  selectedNoteIndexForEdit: number | null = null;
+  noteInitialValue = '';
   selectedFieldForEdit: Field | null = null;
   selectedFieldForView: Field | null = null;
   fieldEditInitialValue: Partial<CreateFieldFormValue> | null = null;
@@ -196,6 +198,15 @@ export class FieldsComponent implements OnInit, OnDestroy {
 
   onAddNote(field: Field): void {
     this.selectedFieldForNote = field;
+    this.selectedNoteIndexForEdit = null;
+    this.noteInitialValue = '';
+    this.showNoteModal = true;
+  }
+
+  onEditNote(payload: { field: Field; noteIndex: number; note: string }): void {
+    this.selectedFieldForNote = payload.field;
+    this.selectedNoteIndexForEdit = payload.noteIndex;
+    this.noteInitialValue = payload.note;
     this.showNoteModal = true;
   }
 
@@ -204,23 +215,28 @@ export class FieldsComponent implements OnInit, OnDestroy {
       return;
     }
 
+    const isEditMode = this.selectedNoteIndexForEdit !== null;
     this.creatingNote = true;
     this.error = '';
-    this.fieldsService
-      .addUpdate(this.selectedFieldForNote._id, {
-        note: payload.note,
-      })
-      .subscribe({
+    const request$ = this.selectedNoteIndexForEdit === null
+      ? this.fieldsService.addUpdate(this.selectedFieldForNote._id, {
+          note: payload.note,
+        })
+      : this.fieldsService.updateNote(this.selectedFieldForNote._id, this.selectedNoteIndexForEdit, payload.note);
+
+    request$.subscribe({
         next: () => {
           this.creatingNote = false;
           this.showNoteModal = false;
           this.selectedFieldForNote = null;
+          this.selectedNoteIndexForEdit = null;
+          this.noteInitialValue = '';
           this.loadFields();
-          this.notificationService.success('Note saved successfully');
+          this.notificationService.success(isEditMode ? 'Note updated successfully' : 'Note saved successfully');
         },
         error: (err) => {
           this.creatingNote = false;
-          this.error = err?.error?.message || 'Failed to add note';
+          this.error = err?.error?.message || (isEditMode ? 'Failed to update note' : 'Failed to add note');
         },
       });
   }
@@ -502,8 +518,21 @@ export class FieldsComponent implements OnInit, OnDestroy {
   }
 
   getAgentName(agentId: string): string {
+    if (!agentId) {
+      return 'Unassigned';
+    }
+
     const match = this.agents.find((agent) => agent._id === agentId);
-    return match ? match.name : 'Unassigned';
+    if (match) {
+      return match.name;
+    }
+
+    const currentUser = this.authService.getUser();
+    if (currentUser?._id === agentId) {
+      return currentUser.name || currentUser.email;
+    }
+
+    return 'Assigned';
   }
 
   riskRank(level: 'low' | 'medium' | 'high'): number {

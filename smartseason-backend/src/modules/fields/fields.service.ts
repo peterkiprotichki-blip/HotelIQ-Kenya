@@ -120,6 +120,42 @@ export class FieldsService {
     return mapRecord(updated);
   }
 
+  async updateNote(id: string, noteIndex: number, note: string, user: { role: string; sub: string }) {
+    const field = await this.prisma.field.findUnique({ where: { id } });
+    if (!field || field.isDeleted) {
+      throw new NotFoundException('Field not found');
+    }
+
+    if (user.role === 'agent' && field.assignedAgentId !== user.sub) {
+      throw new NotFoundException('Field not found');
+    }
+
+    const currentNotes = [...(field.notes || [])];
+    if (noteIndex < 0 || noteIndex >= currentNotes.length) {
+      throw new NotFoundException('Note not found');
+    }
+
+    const existing = currentNotes[noteIndex] || '';
+    const delimiterIndex = existing.indexOf(': ');
+    if (delimiterIndex === -1) {
+      currentNotes[noteIndex] = note.trim();
+    } else {
+      const prefix = existing.slice(0, delimiterIndex);
+      currentNotes[noteIndex] = `${prefix}: ${note.trim()}`;
+    }
+
+    const updated = await this.prisma.field.update({
+      where: { id },
+      data: {
+        notes: currentNotes,
+        updatedBy: user.sub,
+        status: this.computeStatus(field.currentStage, field.expectedHarvestDate, new Date()),
+      },
+    });
+
+    return mapRecord(updated);
+  }
+
   async remove(id: string) {
     const field = await this.prisma.field.findUnique({ where: { id } });
     if (!field || field.isDeleted) {

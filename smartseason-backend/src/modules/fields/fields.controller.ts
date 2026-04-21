@@ -1,9 +1,9 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, Req, UseGuards } from '@nestjs/common';
 import { FieldsService } from './fields.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { AddFieldUpdateDto, CreateFieldDto, UpdateFieldDto } from './dto/field.dto';
+import { AddFieldUpdateDto, CreateFieldDto, UpdateFieldDto, UpdateFieldNoteDto } from './dto/field.dto';
 import { FieldAiInsightDto } from './dto/field-ai.dto';
 import { FieldAiService } from './field-ai.service';
 
@@ -49,6 +49,17 @@ export class FieldsController {
   @Roles('super_admin', 'admin', 'manager', 'agent')
   addUpdate(@Param('id') id: string, @Body() dto: AddFieldUpdateDto, @Req() req) {
     return this.fieldsService.addUpdate(id, dto, req.user);
+  }
+
+  @Put(':id/notes/:noteIndex')
+  @Roles('super_admin', 'admin', 'manager', 'agent')
+  updateNote(
+    @Param('id') id: string,
+    @Param('noteIndex', ParseIntPipe) noteIndex: number,
+    @Body() dto: UpdateFieldNoteDto,
+    @Req() req,
+  ) {
+    return this.fieldsService.updateNote(id, noteIndex, dto.note, req.user);
   }
 
   @Post(':id/ai/insights')

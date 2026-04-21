@@ -44,6 +44,7 @@
       (deleteRequested)="onDeleteField($event)"
       (editRequested)="onEditField($event)"
       (addNoteRequested)="onAddNote($event)"
+      (editNoteRequested)="onEditNote($event)"
       (viewRequested)="onViewField($event)"
       (analyzeRequested)="onAnalyzeField($event)"
     ></app-fields-list>
@@ -63,7 +64,9 @@
     [visible]="showNoteModal"
     [saving]="creatingNote"
     [fieldName]="selectedFieldForNote?.name || ''"
-    (cancelled)="showNoteModal = false; selectedFieldForNote = null"
+    [mode]="selectedNoteIndexForEdit === null ? 'create' : 'edit'"
+    [initialNote]="noteInitialValue"
+    (cancelled)="showNoteModal = false; selectedFieldForNote = null; selectedNoteIndexForEdit = null; noteInitialValue = ''"
     (createRequested)="saveNote($event)"
   ></app-field-note-modal>
 

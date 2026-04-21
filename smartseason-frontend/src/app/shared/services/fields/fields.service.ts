@@ -86,6 +86,10 @@ export class FieldsService {
     return this.http.post<Field>(`${this.apiUrl}/${id}/updates`, payload);
   }
 
+  updateNote(id: string, noteIndex: number, note: string): Observable<Field> {
+    return this.http.put<Field>(`${this.apiUrl}/${id}/notes/${noteIndex}`, { note });
+  }
+
   update(id: string, payload: {
     name?: string;
     cropType?: string;

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ThemeService } from '../../shared/services/theme/theme.service';
 
@@ -16,9 +16,9 @@ export interface CreateFieldNoteValue {
       <div class="w-full max-w-lg rounded-xl border border-gray-200 bg-white p-6 shadow-xl dark:border-slate-700 dark:bg-slate-800">
         <div class="mb-4 flex items-start justify-between gap-3">
           <div>
-            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">Add Note</h2>
+            <h2 class="text-lg font-semibold text-gray-800 dark:text-gray-100">{{ mode === 'edit' ? 'Edit Note' : 'Add Note' }}</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              {{ fieldName ? 'Add a note for ' + fieldName : 'Add a note to this field' }}
+              {{ fieldName ? (mode === 'edit' ? 'Update the note for ' + fieldName : 'Add a note for ' + fieldName) : (mode === 'edit' ? 'Update this note' : 'Add a note to this field') }}
             </p>
           </div>
           <button
@@ -56,7 +56,7 @@ export interface CreateFieldNoteValue {
             class="rounded-lg px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             [style.background-color]="themeService.accent"
           >
-            <span *ngIf="!saving">Save Note</span>
+            <span *ngIf="!saving">{{ mode === 'edit' ? 'Save Changes' : 'Save Note' }}</span>
             <span *ngIf="saving"><i class="fas fa-spinner fa-spin mr-1"></i>Saving...</span>
           </button>
         </div>
@@ -64,10 +64,12 @@ export interface CreateFieldNoteValue {
     </div>
   `,
 })
-export class FieldNoteModalComponent {
+export class FieldNoteModalComponent implements OnChanges {
   @Input() visible = false;
   @Input() saving = false;
   @Input() fieldName = '';
+  @Input() mode: 'create' | 'edit' = 'create';
+  @Input() initialNote = '';
 
   @Output() cancelled = new EventEmitter<void>();
   @Output() createRequested = new EventEmitter<CreateFieldNoteValue>();
@@ -76,6 +78,13 @@ export class FieldNoteModalComponent {
   note = '';
 
   constructor(public readonly themeService: ThemeService) {}
+
+  ngOnChanges(): void {
+    if (this.visible) {
+      this.note = this.initialNote || '';
+      this.error = '';
+    }
+  }
 
   submit(): void {
     this.error = '';

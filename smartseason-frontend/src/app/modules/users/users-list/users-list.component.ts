@@ -48,6 +48,7 @@ export class UsersListComponent implements OnInit {
   showPermissions = false;
   savingUser = false;
   savingPermissions = false;
+  userFormError = '';
   editingUser: BomoproUser | null = null;
   selectedUserForPermissions: BomoproUser | null = null;
   organizations: Tenant[] = [];
@@ -90,12 +91,14 @@ export class UsersListComponent implements OnInit {
 
   openCreate(): void {
     this.editingUser = null;
+    this.userFormError = '';
     this.userForm = this.createEmptyForm();
     this.showUserForm = true;
   }
 
   openEdit(user: BomoproUser): void {
     this.editingUser = user;
+    this.userFormError = '';
     this.userForm = {
       name: user.name,
       email: user.email,
@@ -109,15 +112,20 @@ export class UsersListComponent implements OnInit {
   }
 
   saveUser(): void {
-    if (!this.userForm.name || !this.userForm.email) {
+    this.userFormError = '';
+
+    if (!this.userForm.name.trim() || !this.userForm.email.trim()) {
+      this.userFormError = 'Username and email are required.';
       return;
     }
 
-    if (!this.editingUser && !this.userForm.password) {
+    if (!this.editingUser && !this.userForm.password.trim()) {
+      this.userFormError = 'Password is required when creating a user.';
       return;
     }
 
-    if (!this.userForm.tenantIds.length && this.organizations.length) {
+    if (!this.editingUser && !this.userForm.tenantIds.length && this.organizations.length) {
+      this.userFormError = 'Select at least one organization.';
       return;
     }
 

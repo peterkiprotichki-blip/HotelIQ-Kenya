@@ -69,3 +69,9 @@ export class AddFieldUpdateDto {
   @MinLength(2)
   note: string;
 }
+
+export class UpdateFieldNoteDto {
+  @IsString()
+  @MinLength(2)
+  note: string;
+}

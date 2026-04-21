@@ -15,7 +15,7 @@ export class LoginComponent implements OnInit {
   loading = false;
   error = '';
   success = '';
-  readonly signupDisabledMessage = 'Sign up is currently disabled. Kindly contact admin for credentials.';
+  readonly signupDisabledMessage = 'To Sign up, Kindly contact admin for credentials. Happy to onboard you!';
 
   constructor(
     private authService: AuthService,

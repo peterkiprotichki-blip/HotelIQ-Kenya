@@ -20,6 +20,7 @@ export class LoginComponent implements OnInit {
   signupEmail = '';
   signupPassword = '';
   showSignupPassword = false;
+  readonly signupDisabledMessage = 'Sign up is currently disabled. Kindly contact admin for credentials.';
 
   constructor(
     private authService: AuthService,
@@ -101,5 +102,11 @@ export class LoginComponent implements OnInit {
   googleLogin(): void {
     this.error = '';
     this.success = 'Google Sign-In is coming soon.';
+  }
+
+  showSignupDisabledNotice(): void {
+    this.mode = 'login';
+    this.error = '';
+    this.success = this.signupDisabledMessage;
   }
 }

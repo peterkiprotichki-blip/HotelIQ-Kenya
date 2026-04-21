@@ -1,88 +1,89 @@
-# SmartSeason - Field Monitoring System
+# SmartSeason Field Monitoring System
 
-SmartSeason is a web application for tracking crop progress across multiple fields during a growing season.
+SmartSeason is a crop field monitoring platform that helps teams track field progress, assign agents, capture updates, and review risk-focused insights across a growing season.
 
-## Stack
+## Live Deployment
 
-- Backend: NestJS 10 + Prisma + PostgreSQL
-- Frontend: Angular 17
-- Auth: JWT + Passport
-- AI: Gemini for field insights
+- Frontend: https://smartseason-frontend.onrender.com
+- Backend API: https://smartseason-backend-46ch.onrender.com/api
+
+## Demo Credentials
+
+- Admin: admin@smartseason.com / Admin@123
+- Agent 1: agent1@smartseason.com / Agent@123
+- Agent 2: agent2@smartseason.com / Agent@123
+
+## Tech Stack
+
+- Frontend: Angular 17, Tailwind CSS
+- Backend: NestJS 10, Prisma ORM
+- Database: PostgreSQL
+- Authentication: JWT (role-based access)
+- AI Support: Gemini-powered field insights
 
 ## Core Features
 
-- Role-based access (admin/coordinator/agent)
-- Field creation, assignment, and lifecycle tracking
-- Status insights (`active`, `at_risk`, `completed`)
-- Agent updates and dashboard reporting
+- Role-based workflows (admin and agent)
+- Field creation, assignment, and stage lifecycle tracking
+- Field status monitoring (`active`, `at_risk`, `completed`)
+- Notes and updates from assigned agents
+- Dashboard-level reporting and AI-assisted insights
 
-## Quick Start
+## Architecture Overview
 
-1. Install backend dependencies:
+- `smartseason-frontend`: Angular client application
+- `smartseason-backend`: NestJS REST API and business logic
+- `smartseason-backend/prisma`: schema, migrations, and seed data
+
+The frontend consumes backend endpoints under `/api`, while the backend handles authentication, authorization, field management, and reporting.
+
+## Design Decisions
+
+- Monorepo structure for shared project management and deployment consistency
+- Prisma + PostgreSQL for predictable relational modeling and migrations
+- JWT authentication with role checks to protect admin-only actions
+- Seeded demo users to simplify evaluation and testing
+- AI insights isolated behind API endpoints to keep UI logic clean
+
+## Assumptions
+
+- At least one admin user exists to manage fields and users
+- Agents primarily work on assigned fields
+- Demo credentials are acceptable for assessment review
+- Render free-tier deployment is sufficient for functional evaluation
+
+## Local Run Instructions
+
+1. Start backend
 
 ```bash
 cd smartseason-backend
 npm install
-```
-
-2. Configure backend environment in `.env`:
-
-```env
-PORT=3000
-NODE_ENV=development
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/smartseason?schema=public
-JWT_SECRET=change-me
-JWT_EXPIRATION=24h
-FRONTEND_URL=http://localhost:4400
-GEMINI_API_KEY=your-gemini-api-key
-```
-
-3. Run Prisma setup:
-
-```bash
 npm run prisma:generate
 npm run prisma:migrate
 npm run prisma:seed
-```
-
-4. Start backend:
-
-```bash
 npm run dev
 ```
 
-5. Start frontend:
+2. Start frontend
 
 ```bash
-cd ../smartseason-frontend
+cd smartseason-frontend
 npm install
 npm start
 ```
 
-Backend URL: `http://localhost:3000`
-Frontend URL: `http://localhost:4400`
+3. Local URLs
 
-## Demo Users
+- Frontend: http://localhost:4400
+- Backend: http://localhost:3000/api
 
-Prisma seed creates default users (upsert by email):
-
-- `admin@smartseason.com` / `Admin@123`
-- `agent1@smartseason.com` / `Agent@123`
-- `agent2@smartseason.com` / `Agent@123`
-
-You can override users with `SEED_USERS_JSON` in backend `.env`.
-
-## Main API Endpoints
+## Key API Endpoints
 
 - `POST /api/auth/login`
 - `GET /api/auth/profile`
-- `GET /api/auth/users`
 - `GET /api/fields`
 - `POST /api/fields`
 - `PUT /api/fields/:id`
 - `GET /api/fields/stats`
 - `POST /api/fields/:id/ai/insights`
-
-## Notes
-
-- Source code uses Prisma with PostgreSQL.

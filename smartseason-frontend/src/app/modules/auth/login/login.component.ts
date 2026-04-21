@@ -15,11 +15,6 @@ export class LoginComponent implements OnInit {
   loading = false;
   error = '';
   success = '';
-  mode: 'login' | 'signup' = 'login';
-  signupName = '';
-  signupEmail = '';
-  signupPassword = '';
-  showSignupPassword = false;
   readonly signupDisabledMessage = 'Sign up is currently disabled. Kindly contact admin for credentials.';
 
   constructor(
@@ -79,34 +74,13 @@ export class LoginComponent implements OnInit {
     });
   }
 
-  signup(): void {
-    if (!this.signupName || !this.signupEmail || !this.signupPassword) {
-      this.error = 'Please fill in all fields';
-      return;
-    }
-    this.loading = true;
-    this.error = '';
-    this.authService.signup(this.signupName, this.signupEmail, this.signupPassword).subscribe({
-      next: (res) => {
-        this.loading = false;
-        this.success = res.message;
-        this.mode = 'login';
-      },
-      error: (err) => {
-        this.loading = false;
-        this.error = err.error?.message || 'Signup failed';
-      },
-    });
-  }
-
   googleLogin(): void {
     this.error = '';
     this.success = 'Google Sign-In is coming soon.';
   }
 
   showSignupDisabledNotice(): void {
-    this.mode = 'login';
-    this.error = '';
-    this.success = this.signupDisabledMessage;
+    this.success = '';
+    this.error = this.signupDisabledMessage;
   }
 }

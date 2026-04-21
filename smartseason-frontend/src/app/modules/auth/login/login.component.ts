@@ -80,7 +80,7 @@ export class LoginComponent implements OnInit {
   }
 
   showSignupDisabledNotice(): void {
-    this.success = '';
-    this.error = this.signupDisabledMessage;
+    this.error = '';
+    this.success = this.signupDisabledMessage;
   }
 }

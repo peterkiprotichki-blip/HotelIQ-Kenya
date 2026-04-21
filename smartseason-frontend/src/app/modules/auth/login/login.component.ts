@@ -99,6 +99,7 @@ export class LoginComponent implements OnInit {
   }
 
   googleLogin(): void {
-    this.authService.googleLogin();
+    this.error = '';
+    this.success = 'Google Sign-In is coming soon.';
   }
 }

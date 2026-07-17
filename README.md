@@ -2,17 +2,6 @@
 
 AI-powered lodge revenue platform for the Kenyan hospitality market. Helps hotel and lodge owners manage properties, rooms, bookings, and optimize revenue with AI-driven dynamic pricing.
 
-## Live Deployment
-
-- Frontend: https://smartseason-frontend.onrender.com
-- Backend API: https://smartseason-backend-46ch.onrender.com/api
-
-## Demo Credentials
-
-- Admin: admin@smartseason.com / Admin@123
-- Agent 1: agent1@smartseason.com / Agent@123
-- Agent 2: agent2@smartseason.com / Agent@123
-
 ## Tech Stack
 
 - Frontend: Angular 17, Tailwind CSS, Chart.js, jsPDF
@@ -55,7 +44,6 @@ The frontend consumes backend endpoints under `/api`, while the backend handles 
 ## Assumptions
 
 - One property/lodge per owner in MVP
-- Demo credentials are acceptable for assessment review
 - Render free-tier deployment is sufficient for functional evaluation
 - Kenyan event data influences room demand and pricing
 

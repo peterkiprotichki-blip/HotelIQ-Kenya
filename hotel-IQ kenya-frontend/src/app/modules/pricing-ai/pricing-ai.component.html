@@ -1,0 +1,80 @@
+<div class="pricing-ai-shell space-y-6">
+  <!-- Hero Section -->
+  <section class="pricing-hero rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">AI Revenue Optimizer</p>
+        <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">AI Pricing & Demand Recommendations</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Dynamic rates based on weekends, proximity to local events, and occupancy logs, explained by Gemini.</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm font-semibold text-gray-700 dark:text-gray-300">Room Type:</label>
+        <select [(ngModel)]="selectedRoomType" (change)="onRoomTypeChange()" class="rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100">
+          <option *ngFor="let type of roomTypes" [value]="type">{{ type }}</option>
+        </select>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="rounded-xl border border-gray-200 bg-white py-14 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-400">
+    <i class="fas fa-spinner fa-spin mr-2"></i>Analyzing market demand and loading AI recommendations...
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <!-- Suggestions Grid -->
+  <div *ngIf="!loading && !error" class="space-y-4">
+    <div *ngFor="let sug of suggestions" class="rounded-xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow dark:border-slate-700 dark:bg-slate-800 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      
+      <!-- Date & Room Type -->
+      <div class="md:w-1/5">
+        <p class="text-sm font-bold text-gray-900 dark:text-gray-100">{{ sug.date | date:'EEEE, MMM d' }}</p>
+        <p class="text-xs text-gray-500 dark:text-gray-400">{{ sug.roomType }} Room</p>
+      </div>
+
+      <!-- Price comparison -->
+      <div class="md:w-1/5 flex items-baseline gap-2">
+        <div class="text-center md:text-left">
+          <p class="text-lg font-bold text-gray-900 dark:text-gray-100">{{ sug.suggestedPrice | number }} KES</p>
+          <p class="text-xs text-gray-400">Base: {{ sug.basePrice | number }} KES</p>
+        </div>
+        <span class="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold" 
+              [ngClass]="getPriceDiff(sug) >= 0 ? 'bg-red-50 text-red-700 dark:bg-red-950/20 dark:text-red-400' : 'bg-green-50 text-green-700 dark:bg-green-950/20 dark:text-green-400'">
+          {{ getPriceDiff(sug) >= 0 ? '+' : '' }}{{ getPriceDiffPercent(sug) }}%
+        </span>
+      </div>
+
+      <!-- Demand Score Meter -->
+      <div class="md:w-1/6">
+        <p class="text-xs text-gray-500 dark:text-gray-400">Demand Score: {{ sug.demandScore }}%</p>
+        <div class="mt-1.5 h-2 w-full rounded-full bg-gray-100 dark:bg-slate-700">
+          <div class="h-2 rounded-full" 
+               [style.width.%]="sug.demandScore" 
+               [style.background-color]="getScoreColor(sug.demandScore)"></div>
+        </div>
+      </div>
+
+      <!-- AI Reasoning Text -->
+      <div class="md:w-2/5 rounded-lg bg-gray-50 px-4 py-2.5 dark:bg-slate-900/60 border-l-4 border-cyan-500">
+        <p class="text-xs font-bold uppercase tracking-wider text-cyan-600 dark:text-cyan-400 flex items-center gap-1.5 mb-1">
+          <i class="fas fa-magic"></i> Gemini Explanation
+        </p>
+        <p class="text-xs text-gray-600 dark:text-gray-300 italic">{{ sug.reasoning }}</p>
+      </div>
+
+      <!-- Action Button -->
+      <div class="self-end md:self-center">
+        <button (click)="applySuggestion(sug)" 
+                [disabled]="applyingId === sug.id || sug.suggestedPrice === sug.basePrice"
+                class="rounded-lg bg-cyan-600 hover:bg-cyan-700 text-xs font-bold text-white px-3 py-2 disabled:opacity-50 transition-colors">
+          <i class="fas fa-spinner fa-spin mr-1" *ngIf="applyingId === sug.id"></i>
+          Apply Rate
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

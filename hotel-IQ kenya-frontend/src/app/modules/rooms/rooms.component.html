@@ -1,0 +1,143 @@
+<div class="rooms-shell space-y-6">
+  <!-- Hero Section -->
+  <section class="rooms-hero rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">HotelIQ Kenya</p>
+        <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">Rooms & Base Pricing</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Configure your rooms, types, base price rates, and amenities.</p>
+      </div>
+      <button (click)="openCreateModal()" class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 shadow-sm transition-colors">
+        <i class="fas fa-plus"></i> Add New Room
+      </button>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="rounded-xl border border-gray-200 bg-white py-14 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-400">
+    <i class="fas fa-spinner fa-spin mr-2"></i>Loading rooms configuration...
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <!-- Rooms Grid -->
+  <div *ngIf="!loading && !error" class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    <div *ngFor="let room of rooms" class="room-card group relative rounded-2xl border border-gray-200 bg-white p-5 shadow-sm hover:shadow-md transition-all duration-200 dark:border-slate-700 dark:bg-slate-800">
+      <div class="flex items-start justify-between">
+        <div>
+          <span class="inline-flex items-center rounded-full bg-cyan-50 px-2 py-1 text-xs font-semibold text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">
+            Room {{ room.roomNumber }}
+          </span>
+          <h3 class="mt-2 text-lg font-bold text-gray-800 dark:text-gray-100">{{ room.roomType }}</h3>
+        </div>
+        <div class="flex items-center gap-1">
+          <button (click)="openCreateModal(room)" class="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-slate-700 dark:hover:text-gray-200" title="Edit Room">
+            <i class="fas fa-edit"></i>
+          </button>
+          <button (click)="deleteRoom(room)" class="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 dark:hover:bg-slate-700 dark:hover:text-red-400" title="Delete Room">
+            <i class="fas fa-trash-alt"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Specs -->
+      <div class="mt-4 border-t border-gray-100 pt-3 dark:border-slate-700/50 space-y-2">
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">Capacity:</span>
+          <span class="font-semibold text-gray-700 dark:text-gray-300">{{ room.capacity }} Guest(s)</span>
+        </div>
+        <div class="flex justify-between text-sm">
+          <span class="text-gray-500 dark:text-gray-400">Base Price:</span>
+          <span class="font-bold text-cyan-600 dark:text-cyan-400">{{ room.basePrice | number }} KES / Night</span>
+        </div>
+      </div>
+
+      <!-- Amenities -->
+      <div class="mt-4">
+        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Amenities</p>
+        <div class="mt-2 flex flex-wrap gap-1.5">
+          <span *ngFor="let amenity of room.amenities" class="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600 dark:bg-slate-700 dark:text-gray-300">
+            {{ amenity }}
+          </span>
+          <span *ngIf="room.amenities.length === 0" class="text-xs text-gray-400 italic">No amenities specified</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty State -->
+  <div *ngIf="!loading && !error && rooms.length === 0" class="rounded-2xl border border-dashed border-gray-300 bg-white p-12 text-center dark:border-slate-700 dark:bg-slate-800">
+    <div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
+      <i class="fas fa-door-open text-xl"></i>
+    </div>
+    <h3 class="mt-4 text-sm font-semibold text-gray-900 dark:text-gray-100">No rooms configured</h3>
+    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Get started by creating your first room.</p>
+    <div class="mt-6">
+      <button (click)="openCreateModal()" class="inline-flex items-center gap-2 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 shadow-sm transition-colors">
+        <i class="fas fa-plus"></i> Add New Room
+      </button>
+    </div>
+  </div>
+
+  <!-- Create/Edit Modal -->
+  <div *ngIf="showCreateModal" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-xl dark:bg-slate-800 border border-gray-100 dark:border-slate-700 overflow-hidden transform transition-all">
+      <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700/50">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+          {{ selectedRoom ? 'Edit Room' : 'Add New Room' }}
+        </h2>
+        <button (click)="closeModal()" class="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-slate-700">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <form [formGroup]="roomForm" (ngSubmit)="saveRoom()" class="p-6 space-y-4">
+        <!-- Room Number -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Room Number</label>
+          <input type="text" formControlName="roomNumber" placeholder="e.g. 101, 202A" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+        </div>
+
+        <!-- Room Type -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Room Type</label>
+          <select formControlName="roomType" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100">
+            <option *ngFor="let type of roomTypes" [value]="type">{{ type }}</option>
+          </select>
+        </div>
+
+        <!-- Base Price -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Base Price (KES per night)</label>
+          <input type="number" formControlName="basePrice" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+        </div>
+
+        <!-- Capacity -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Max Guest Capacity</label>
+          <input type="number" formControlName="capacity" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+        </div>
+
+        <!-- Amenities -->
+        <div>
+          <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300">Amenities (comma-separated)</label>
+          <input type="text" formControlName="amenitiesStr" placeholder="e.g. WiFi, TV, AC, Ocean View" class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm shadow-sm focus:border-cyan-500 focus:outline-none focus:ring-1 focus:ring-cyan-500 dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+        </div>
+
+        <!-- Submit -->
+        <div class="mt-6 flex justify-end gap-3 border-t border-gray-100 pt-4 dark:border-slate-700/50">
+          <button type="button" (click)="closeModal()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="roomForm.invalid || saving" class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 shadow-sm disabled:opacity-50">
+            <i class="fas fa-spinner fa-spin mr-1" *ngIf="saving"></i>
+            {{ selectedRoom ? 'Save Changes' : 'Create Room' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>

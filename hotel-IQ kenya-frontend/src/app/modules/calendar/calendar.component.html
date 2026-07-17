@@ -1,0 +1,305 @@
+<div class="calendar-shell space-y-6">
+  <!-- Hero Section -->
+  <section class="calendar-hero rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">HotelIQ Kenya</p>
+        <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">Reservations & Room Bookings</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Manage room check-ins, direct guest bookings, and interactive schedules.</p>
+      </div>
+      <div class="flex items-center gap-4">
+        <!-- Legend (only visible for Calendar tab) -->
+        <div *ngIf="calendarActiveTab === 'calendar'" class="flex items-center gap-3 text-xs font-medium text-gray-650 dark:text-gray-400">
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#0284c7]"></span> Confirmed</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#10b981]"></span> Checked-In</span>
+          <span class="flex items-center gap-1.5"><span class="h-3 w-3 rounded bg-[#64748b]"></span> Checked-Out</span>
+        </div>
+        <button (click)="refreshBookings()" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">
+          <i class="fas fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Navigation Tabs -->
+  <div class="flex gap-3 border-b border-gray-200 dark:border-slate-700">
+    <button (click)="switchCalendarTab('calendar')" 
+            [class]="calendarActiveTab === 'calendar' ? 'border-b-2 border-cyan-600 font-bold text-cyan-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+            class="px-4 py-2 text-sm outline-none transition-all flex items-center gap-2">
+      <i class="fas fa-calendar-alt"></i> Interactive Grid View
+    </button>
+    <button (click)="switchCalendarTab('list')" 
+            [class]="calendarActiveTab === 'list' ? 'border-b-2 border-cyan-600 font-bold text-cyan-600' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700'"
+            class="px-4 py-2 text-sm outline-none transition-all flex items-center gap-2">
+      <i class="fas fa-list-ul"></i> Reservations Booking List
+    </button>
+  </div>
+
+  <!-- Loading State (Calendar Only) -->
+  <div *ngIf="loading && calendarActiveTab === 'calendar'" class="rounded-xl border border-gray-200 bg-white py-14 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-400">
+    <i class="fas fa-spinner fa-spin mr-2"></i>Loading booking calendar...
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <!-- TAB 1: Grid View -->
+  <div *ngIf="calendarActiveTab === 'calendar' && !loading && !error" class="overflow-x-auto">
+    <div class="calendar-grid-container min-w-[1200px]">
+      <!-- Header Row -->
+      <div class="calendar-header-cell">Rooms</div>
+      <div *ngFor="let date of dates" class="calendar-header-cell">
+        <p class="text-xs uppercase text-gray-400 dark:text-gray-500">{{ date | date:'EEE' }}</p>
+        <p class="text-sm font-bold text-gray-800 dark:text-gray-200">{{ date | date:'dd' }}</p>
+        <p class="text-[10px] text-gray-400">{{ date | date:'MMM' }}</p>
+      </div>
+
+      <!-- Rows (One per Room) -->
+      <ng-container *ngFor="let room of rooms">
+        <!-- Room Info Column -->
+        <div class="calendar-room-cell">
+          <div>
+            <p class="text-sm font-bold text-gray-900 dark:text-gray-100">Room {{ room.roomNumber }}</p>
+            <p class="text-[10px] font-normal text-gray-400">{{ room.roomType }}</p>
+          </div>
+        </div>
+
+        <!-- Days Columns -->
+        <div *ngFor="let date of dates" 
+             (click)="onCellClick(room, date, $event)" 
+             class="calendar-day-cell">
+          
+          <!-- Render Booking Bar if match -->
+          <ng-container *ngIf="getBookingForCell(room._id || room.id, date) as booking">
+            <div (click)="viewBookingDetails(booking)" 
+                 class="booking-bar animate-fade-in" 
+                 [style.background-color]="getBookingBarColor(booking.status)"
+                 [title]="booking.guestName + ' (' + booking.status + ')'">
+              <span class="truncate block">{{ booking.guestName }}</span>
+            </div>
+          </ng-container>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+  <!-- TAB 2: Bookings List -->
+  <div *ngIf="calendarActiveTab === 'list'" class="space-y-4">
+    <!-- List Loading -->
+    <div *ngIf="loadingBookingsList" class="rounded-xl border border-gray-200 bg-white py-14 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-800">
+      <i class="fas fa-spinner fa-spin mr-2"></i>Loading complete bookings database...
+    </div>
+
+    <!-- Table -->
+    <div *ngIf="!loadingBookingsList" class="bg-white dark:bg-slate-800 rounded-2xl border border-gray-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <!-- Empty Registrations -->
+      <div *ngIf="allBookingsList.length === 0" class="p-12 text-center text-gray-400 italic">
+        <i class="fas fa-receipt text-4xl text-gray-300 mb-3 block"></i>
+        No room booking reservations found.
+      </div>
+
+      <div *ngIf="allBookingsList.length > 0" class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr class="bg-gray-50 dark:bg-slate-900 border-b border-gray-200 dark:border-slate-700 text-gray-550 dark:text-gray-455 font-bold uppercase tracking-wider">
+              <th class="p-4">Guest Details</th>
+              <th class="p-4">Room Info</th>
+              <th class="p-4">Check-In / Out</th>
+              <th class="p-4">Total Price</th>
+              <th class="p-4">Source</th>
+              <th class="p-4">Status</th>
+              <th class="p-4 text-center">Action</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-150 dark:divide-slate-700">
+            <tr *ngFor="let b of allBookingsList" class="hover:bg-gray-50/50 dark:hover:bg-slate-750/30">
+              <td class="p-4">
+                <div class="font-bold text-gray-800 dark:text-gray-200">{{ b.guestName }}</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">{{ b.guestPhone }}</div>
+                <div class="text-[10px] text-gray-400" *ngIf="b.guestEmail">{{ b.guestEmail }}</div>
+              </td>
+              <td class="p-4">
+                <div class="font-bold text-cyan-600 dark:text-cyan-400">Room {{ b.roomNumber }}</div>
+                <div class="text-[10px] text-gray-400 mt-0.5">{{ b.roomType }}</div>
+              </td>
+              <td class="p-4 text-gray-600 dark:text-gray-350">
+                <div><strong>In:</strong> {{ b.checkIn | date:'mediumDate' }}</div>
+                <div class="mt-0.5"><strong>Out:</strong> {{ b.checkOut | date:'mediumDate' }}</div>
+              </td>
+              <td class="p-4">
+                <span class="font-bold text-gray-850 dark:text-gray-200">KES {{ b.totalPrice | number }}</span>
+                <div class="text-[10px] text-gray-400 mt-0.5">KES {{ b.pricePerNight | number }}/night</div>
+              </td>
+              <td class="p-4">
+                <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-gray-100 text-gray-600 dark:bg-slate-700 dark:text-gray-300">
+                  {{ b.source }}
+                </span>
+              </td>
+              <td class="p-4">
+                <span class="px-2.5 py-1 rounded-full text-[9px] font-bold uppercase text-white"
+                      [style.background-color]="getBookingBarColor(b.status)">
+                  {{ b.status }}
+                </span>
+              </td>
+              <td class="p-4 text-center">
+                <button (click)="viewBookingDetails(b)" class="px-3 py-1.5 rounded bg-cyan-50 hover:bg-cyan-100 text-cyan-700 font-bold dark:bg-slate-700 dark:text-cyan-400 dark:hover:bg-slate-650 transition-all">
+                  Details / Action
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Create Booking Modal -->
+  <div *ngIf="showCreateModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-xl dark:bg-slate-800 border border-gray-100 dark:border-slate-700 overflow-hidden transform transition-all animate-fade-in">
+      <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700/50">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+          Create Booking for Room {{ selectedRoomForCreate?.roomNumber }}
+        </h2>
+        <button (click)="closeModals()" class="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-slate-700">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <form [formGroup]="bookingForm" (ngSubmit)="createBooking()">
+        <div class="p-6 space-y-4">
+          <!-- Guest Name -->
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Guest Name *</label>
+            <input type="text" formControlName="guestName" class="w-full px-3 py-2 border rounded-lg text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="e.g. Mwangi Kamau" />
+          </div>
+
+          <!-- Guest Phone -->
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Guest Phone *</label>
+            <input type="text" formControlName="guestPhone" class="w-full px-3 py-2 border rounded-lg text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="e.g. 0712345678" />
+          </div>
+
+          <!-- Guest Email -->
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Guest Email</label>
+            <input type="email" formControlName="guestEmail" class="w-full px-3 py-2 border rounded-lg text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="e.g. guest@example.com" />
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <!-- Check In -->
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Check In *</label>
+              <input type="date" formControlName="checkIn" class="w-full px-3 py-2 border rounded-lg text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+            </div>
+
+            <!-- Check Out -->
+            <div>
+              <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Check Out *</label>
+              <input type="date" formControlName="checkOut" class="w-full px-3 py-2 border rounded-lg text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+            </div>
+          </div>
+
+          <!-- Source -->
+          <div>
+            <label class="block text-xs font-bold text-gray-400 uppercase mb-1">Booking Source *</label>
+            <select formControlName="source" class="w-full px-3 py-2 border rounded-lg text-sm outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100">
+              <option *ngFor="let src of sources" [value]="src">{{ src | uppercase }}</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-gray-50 border-t border-gray-100 px-6 py-4 flex justify-end gap-3 dark:bg-slate-800 dark:border-slate-700/50">
+          <button type="button" (click)="closeModals()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-650 dark:text-gray-250">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="bookingForm.invalid || saving" class="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-semibold text-white hover:bg-cyan-700 disabled:opacity-50">
+            <i class="fas fa-spinner fa-spin mr-2" *ngIf="saving"></i>
+            Create Booking
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Booking Details Modal -->
+  <div *ngIf="showDetailsModal && selectedBooking" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-xl dark:bg-slate-800 border border-gray-100 dark:border-slate-700 overflow-hidden transform transition-all animate-fade-in">
+      <div class="flex items-center justify-between border-b border-gray-100 px-6 py-4 dark:border-slate-700/50">
+        <h2 class="text-lg font-bold text-gray-900 dark:text-gray-100">
+          Booking Details (Room {{ selectedBooking.roomNumber }})
+        </h2>
+        <button (click)="closeModals()" class="rounded-lg p-1 text-gray-400 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-slate-700">
+          <i class="fas fa-times text-lg"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4 text-sm text-gray-600 dark:text-gray-300">
+        <div class="flex justify-between">
+          <span class="font-semibold">Guest Name:</span>
+          <span class="font-bold text-gray-900 dark:text-gray-100">{{ selectedBooking.guestName }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-semibold">Guest Phone:</span>
+          <span>{{ selectedBooking.guestPhone }}</span>
+        </div>
+        <div class="flex justify-between" *ngIf="selectedBooking.guestEmail">
+          <span class="font-semibold">Guest Email:</span>
+          <span>{{ selectedBooking.guestEmail }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-semibold">Check In:</span>
+          <span>{{ selectedBooking.checkIn | date:'mediumDate' }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-semibold">Check Out:</span>
+          <span>{{ selectedBooking.checkOut | date:'mediumDate' }}</span>
+        </div>
+        <div class="flex justify-between">
+          <span class="font-semibold">Rate Per Night:</span>
+          <span class="font-semibold text-gray-900 dark:text-gray-100">{{ selectedBooking.pricePerNight | number }} KES</span>
+        </div>
+        <div class="flex justify-between border-t border-gray-100 pt-2 dark:border-slate-700/50">
+          <span class="font-semibold text-gray-900 dark:text-gray-100">Total Price:</span>
+          <span class="font-bold text-cyan-600 dark:text-cyan-400">{{ selectedBooking.totalPrice | number }} KES</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <span class="font-semibold">Status:</span>
+          <span class="inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold text-white" 
+                [style.background-color]="getBookingBarColor(selectedBooking.status)">
+            {{ selectedBooking.status | uppercase }}
+          </span>
+        </div>
+
+        <!-- Status Actions Transitions -->
+        <div class="mt-6 flex flex-col gap-2 border-t border-gray-100 pt-4 dark:border-slate-700/50">
+          <p class="text-xs font-semibold uppercase tracking-wider text-gray-400">Available Status Actions</p>
+          
+          <!-- Transition Confirmed to Checked-in or Cancelled -->
+          <div *ngIf="selectedBooking.status === 'confirmed'" class="flex gap-2 w-full">
+            <button (click)="updateBookingStatus('checked-in')" class="flex-1 rounded-lg bg-emerald-600 py-2 text-xs font-semibold text-white hover:bg-emerald-700">
+              <i class="fas fa-sign-in-alt mr-1"></i> Check In
+            </button>
+            <button (click)="updateBookingStatus('cancelled')" class="flex-1 rounded-lg bg-red-600 py-2 text-xs font-semibold text-white hover:bg-red-700">
+              <i class="fas fa-ban mr-1"></i> Cancel
+            </button>
+            <button (click)="updateBookingStatus('no-show')" class="flex-1 rounded-lg bg-amber-600 py-2 text-xs font-semibold text-white hover:bg-amber-700">
+              No Show
+            </button>
+          </div>
+
+          <!-- Transition Checked-in to Checked-out -->
+          <button *ngIf="selectedBooking.status === 'checked-in'" (click)="updateBookingStatus('checked-out')" class="w-full rounded-lg bg-slate-600 py-2 text-xs font-semibold text-white hover:bg-slate-700">
+            <i class="fas fa-sign-out-alt mr-1"></i> Check Out Guest
+          </button>
+
+          <!-- No transitions if already checked-out or cancelled -->
+          <p *ngIf="selectedBooking.status === 'checked-out' || selectedBooking.status === 'cancelled' || selectedBooking.status === 'no-show'" class="text-xs text-gray-400 italic text-center">
+            No further actions available for this booking status.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

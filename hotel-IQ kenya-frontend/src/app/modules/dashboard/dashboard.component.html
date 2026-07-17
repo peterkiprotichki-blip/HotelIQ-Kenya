@@ -1,0 +1,122 @@
+<div class="dashboard-shell space-y-6">
+  <!-- Hero Section -->
+  <section class="dashboard-hero rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-800 sm:p-6">
+    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-600 dark:text-cyan-400">HotelIQ Kenya</p>
+        <h1 class="mt-1 text-2xl font-bold text-gray-900 dark:text-gray-100">Hotel Management Dashboard</h1>
+        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Live indicators of occupancy, bookings, monthly revenue, and demand optimization.</p>
+      </div>
+      <div class="flex items-center gap-2 self-start sm:self-auto">
+        <span class="rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-600 dark:border-slate-650 dark:bg-slate-900 dark:text-gray-300">
+          Role: {{ roleLabel }}
+        </span>
+        <button (click)="loadDashboardData()" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700">
+          <i class="fas fa-rotate-right"></i> Refresh
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="rounded-xl border border-gray-200 bg-white py-14 text-center text-gray-500 dark:border-slate-700 dark:bg-slate-800 dark:text-gray-400">
+    <i class="fas fa-spinner fa-spin mr-2"></i>Loading property stats and map details...
+  </div>
+
+  <!-- Error Alert -->
+  <div *ngIf="error" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-800/50 dark:bg-red-900/20 dark:text-red-300">
+    {{ error }}
+  </div>
+
+  <!-- Metrics Cards -->
+  <ng-container *ngIf="!loading && summary">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- Property Name -->
+      <article class="metric-card rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex items-start justify-between">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Active Property</p>
+          <span class="metric-icon bg-sky-100 text-sky-750 dark:bg-sky-950/40 dark:text-sky-350"><i class="fas fa-hotel"></i></span>
+        </div>
+        <p class="mt-2 text-xl font-bold text-gray-900 dark:text-gray-100 truncate">{{ propertyName }}</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Location county: Mombasa</p>
+      </article>
+
+      <!-- Occupancy Rate -->
+      <article class="metric-card rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex items-start justify-between">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Today's Occupancy</p>
+          <span class="metric-icon bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300"><i class="fas fa-percent"></i></span>
+        </div>
+        <p class="mt-2 text-3xl font-bold text-emerald-600 dark:text-emerald-400">{{ summary.occupancyRate }}%</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Rooms occupied today</p>
+      </article>
+
+      <!-- Monthly Revenue -->
+      <article class="metric-card rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+        <div class="flex items-start justify-between">
+          <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Revenue (This Month)</p>
+          <span class="metric-icon bg-cyan-100 text-cyan-750 dark:bg-cyan-950/40 dark:text-cyan-350"><i class="fas fa-wallet"></i></span>
+        </div>
+        <p class="mt-2 text-3xl font-bold text-cyan-600 dark:text-cyan-400">{{ summary.monthlyRevenue | number }} KES</p>
+        <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">Aggregate check-in totals</p>
+      </article>
+    </div>
+
+    <!-- Map & Lists Layout -->
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-5">
+      <!-- Left Column: Map of property & nearby events -->
+      <section class="lg:col-span-3 rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800 h-[450px]">
+        <h3 class="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Property & Local Events Proximity Map</h3>
+        <app-map [latitude]="propertyLatitude" 
+                 [longitude]="propertyLongitude" 
+                 [markerLabel]="propertyName" 
+                 [events]="events" 
+                 [radiusKm]="50" 
+                 [isPicker]="false"></app-map>
+      </section>
+
+      <!-- Right Column: AI Insights & Upcoming Bookings -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- AI Insight Banner Card -->
+        <section class="rounded-2xl border border-cyan-200 bg-cyan-50/50 p-5 dark:border-cyan-950/40 dark:bg-cyan-950/15">
+          <div class="mb-3 flex items-center gap-2">
+            <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
+              <i class="fas fa-lightbulb text-sm"></i>
+            </span>
+            <h3 class="text-sm font-semibold uppercase tracking-wide text-cyan-800 dark:text-cyan-400">AI Pricing & Demand Insight</h3>
+          </div>
+          <p class="text-xs text-gray-600 dark:text-gray-300 leading-relaxed italic">
+            "{{ summary.aiInsight }}"
+          </p>
+        </section>
+
+        <!-- Upcoming check-ins/outs list -->
+        <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-slate-700 dark:bg-slate-800">
+          <h3 class="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Upcoming Arrivals / Departures</h3>
+          
+          <div class="space-y-3 max-h-[220px] overflow-y-auto pr-1">
+            <div *ngFor="let booking of summary.upcomingBookings" class="flex items-center justify-between border-b border-gray-50 pb-2.5 dark:border-slate-700/50">
+              <div>
+                <p class="text-xs font-bold text-gray-800 dark:text-gray-200">{{ booking.guestName }}</p>
+                <p class="text-[10px] text-gray-400">Room {{ booking.roomNumber }} · {{ booking.roomType }}</p>
+              </div>
+              <div class="text-right">
+                <p class="text-[10px] font-semibold text-gray-500">{{ booking.checkIn | date:'MMM d' }} - {{ booking.checkOut | date:'MMM d' }}</p>
+                <span class="inline-flex rounded-full px-1.5 py-0.5 text-[9px] font-bold text-white uppercase"
+                      [ngStyle]="{'background-color': booking.status === 'checked-in' ? '#10b981' : '#0284c7'}">
+                  {{ booking.status }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Empty list -->
+            <p *ngIf="summary.upcomingBookings.length === 0" class="text-xs text-gray-450 italic text-center py-6">
+              No check-ins or check-outs scheduled in next 7 days.
+            </p>
+          </div>
+        </section>
+      </div>
+    </div>
+  </ng-container>
+</div>
+

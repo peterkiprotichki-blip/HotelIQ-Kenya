@@ -1,0 +1,585 @@
+<div class="min-h-screen bg-gray-50 dark:bg-slate-900 transition-colors duration-250 flex flex-col font-sans">
+  <!-- Public Top Header -->
+  <header class="bg-white dark:bg-slate-800 border-b border-gray-150 dark:border-slate-700/50 shadow-sm h-16 flex items-center justify-between px-6 z-10">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl flex items-center justify-center bg-cyan-600 shadow-md">
+        <i class="fas fa-hotel text-white text-base"></i>
+      </div>
+      <div>
+        <span class="text-lg font-bold text-gray-800 dark:text-gray-100">HotelIQ Kenya</span>
+        <span class="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-50 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400">Guest Portal</span>
+      </div>
+    </div>
+    
+    <div class="flex items-center gap-2">
+      <!-- Back to Dashboard button (if exploring) -->
+      <button *ngIf="isLoggedIn && exploring" 
+              (click)="exploring = false" 
+              class="inline-flex items-center gap-1.5 rounded-lg bg-cyan-55 dark:bg-slate-700/50 hover:bg-cyan-100 dark:hover:bg-slate-750 text-cyan-700 dark:text-gray-250 px-3.5 py-1.5 text-xs font-bold transition-all border border-cyan-100/50 dark:border-slate-650 mr-2">
+        <i class="fas fa-th-large text-[10px]"></i> My Dashboard
+      </button>
+
+      <div *ngIf="isLoggedIn" class="hidden sm:flex items-center gap-2 bg-gray-100 dark:bg-slate-700/50 px-3 py-1.5 rounded-lg text-xs">
+        <i class="fas fa-user-circle text-cyan-600 dark:text-cyan-400"></i>
+        <span class="text-gray-700 dark:text-gray-250 font-medium">Hello, {{ currentUser?.name }}</span>
+      </div>
+      
+      <a href="/login" class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 dark:border-slate-600 dark:text-gray-200 dark:hover:bg-slate-700 transition-colors">
+        <i class="fas fa-sign-in-alt"></i> Lodge Owner Sign In
+      </a>
+    </div>
+  </header>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+    
+    <!-- Logged In Guest Dashboard View -->
+    <div *ngIf="isLoggedIn && !exploring" class="space-y-6">
+      
+      <!-- Welcome Header & Quick Action Banner -->
+      <div class="bg-gradient-to-r from-cyan-600 to-teal-500 rounded-3xl p-6 md:p-8 shadow-lg text-white flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+        <div>
+          <span class="text-xs font-bold bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider">Guest Dashboard</span>
+          <h2 class="text-2xl md:text-3xl font-extrabold mt-2">Welcome back, {{ currentUser?.name }}!</h2>
+          <p class="text-white/80 text-sm mt-1">Manage your active room reservations and upcoming event passes below.</p>
+        </div>
+        <div class="flex gap-3">
+          <button (click)="exploring = true" class="px-5 py-2.5 bg-white text-cyan-700 hover:bg-cyan-50 font-bold text-xs rounded-xl shadow transition-all duration-200 flex items-center gap-2">
+            <i class="fas fa-compass"></i> Book New Lodges & Events
+          </button>
+          <button (click)="logoutGuest()" class="px-4 py-2.5 bg-cyan-700/50 hover:bg-cyan-700 border border-white/20 text-white font-bold text-xs rounded-xl transition-all duration-200 flex items-center gap-2">
+            <i class="fas fa-sign-out-alt"></i> Log Out
+          </button>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Room Bookings count -->
+        <div class="bg-white dark:bg-slate-800 border border-gray-150 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-cyan-50 dark:bg-cyan-950/30 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-xl">
+            <i class="fas fa-bed"></i>
+          </div>
+          <div>
+            <p class="text-xs text-gray-450 font-bold uppercase tracking-wider">Room Bookings</p>
+            <h4 class="text-2xl font-black text-gray-800 dark:text-white mt-0.5">{{ myRoomBookings.length }}</h4>
+          </div>
+        </div>
+
+        <!-- Event Tickets count -->
+        <div class="bg-white dark:bg-slate-800 border border-gray-150 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-purple-50 dark:bg-purple-950/30 text-purple-650 dark:text-purple-400 flex items-center justify-center text-xl">
+            <i class="fas fa-ticket-alt"></i>
+          </div>
+          <div>
+            <p class="text-xs text-gray-450 font-bold uppercase tracking-wider">Event Passes & Dining</p>
+            <h4 class="text-2xl font-black text-gray-800 dark:text-white mt-0.5">{{ myEventBookings.length }}</h4>
+          </div>
+        </div>
+
+        <!-- Status Active -->
+        <div class="bg-white dark:bg-slate-800 border border-gray-150 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center text-xl">
+            <i class="fas fa-check-circle"></i>
+          </div>
+          <div>
+            <p class="text-xs text-gray-450 font-bold uppercase tracking-wider">Account Status</p>
+            <h4 class="text-xs font-extrabold text-emerald-600 dark:text-emerald-450 mt-1.5 uppercase tracking-wide">Verified Guest</h4>
+          </div>
+        </div>
+
+        <!-- User Role -->
+        <div class="bg-white dark:bg-slate-800 border border-gray-150 dark:border-slate-700 rounded-2xl p-5 shadow-sm flex items-center gap-4">
+          <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 flex items-center justify-center text-xl">
+            <i class="fas fa-user-shield"></i>
+          </div>
+          <div>
+            <p class="text-xs text-gray-450 font-bold uppercase tracking-wider">Assigned Role</p>
+            <h4 class="text-xs font-extrabold text-amber-650 dark:text-amber-550 mt-1.5 uppercase tracking-wide">Tenant Guest</h4>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Dashboard Grid: Left list, Right list -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- Left: Room Reservation History -->
+        <div class="bg-white dark:bg-slate-800 border border-gray-150 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4">
+          <h3 class="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-slate-700">
+            <i class="fas fa-key text-cyan-600 dark:text-cyan-400"></i> My Lodging Reservations
+          </h3>
+
+          <div *ngIf="myRoomBookings.length === 0" class="flex flex-col items-center justify-center py-10 text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-700/50 flex items-center justify-center text-gray-400 text-lg">
+              <i class="fas fa-bed"></i>
+            </div>
+            <p class="text-xs text-gray-405 italic">You have no lodging reservations booked yet.</p>
+            <button (click)="exploring = true" class="text-xs text-cyan-655 font-bold dark:text-cyan-400 hover:underline">
+              Start Exploring Lodges &rarr;
+            </button>
+          </div>
+
+          <div *ngIf="myRoomBookings.length > 0" class="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+            <div *ngFor="let b of myRoomBookings" class="p-4 rounded-xl border border-gray-100 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/30 flex justify-between items-start gap-4">
+              <div class="space-y-1">
+                <h4 class="font-bold text-gray-800 dark:text-gray-200 text-sm">
+                  {{ b.property?.name || 'Mombasa Ocean Breeze Lodge' }}
+                </h4>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  Room: <span class="font-semibold text-gray-700 dark:text-gray-305">Room {{ b.room?.roomNumber || '101' }} ({{ b.room?.roomType || 'Standard' }})</span>
+                </p>
+                <div class="flex items-center gap-2 mt-1 text-[11px] text-gray-400">
+                  <span>In: {{ b.checkIn | date:'mediumDate' }}</span>
+                  <span>&bull;</span>
+                  <span>Out: {{ b.checkOut | date:'mediumDate' }}</span>
+                </div>
+              </div>
+              <div class="text-right space-y-1.5 flex flex-col items-end">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                      [ngClass]="{
+                        'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400': b.status === 'confirmed' || b.status === 'checked-in',
+                        'bg-gray-100 text-gray-700 dark:bg-slate-800 dark:text-gray-400': b.status === 'checked-out',
+                        'bg-red-50 text-red-700': b.status === 'cancelled'
+                      }">
+                  {{ b.status | uppercase }}
+                </span>
+                <span class="font-black text-gray-850 dark:text-gray-150 text-sm">
+                  KES {{ b.totalPrice | number }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Event Tickets & Dining Reservations (Sleek Ticket layout) -->
+        <div class="bg-white dark:bg-slate-800 border border-gray-150 dark:border-slate-700 rounded-2xl p-6 shadow-sm space-y-4">
+          <h3 class="text-base font-bold text-gray-800 dark:text-gray-100 flex items-center gap-2 pb-2 border-b border-gray-100 dark:border-slate-700">
+            <i class="fas fa-ticket-alt text-purple-600 dark:text-purple-400"></i> Event Passes & Dining Tickets
+          </h3>
+
+          <div *ngIf="myEventBookings.length === 0" class="flex flex-col items-center justify-center py-10 text-center space-y-3">
+            <div class="w-12 h-12 rounded-full bg-gray-50 dark:bg-slate-700/50 flex items-center justify-center text-gray-400 text-lg">
+              <i class="fas fa-ticket-alt"></i>
+            </div>
+            <p class="text-xs text-gray-405 italic">You have no event tickets or dining reservations yet.</p>
+            <button (click)="exploring = true" class="text-xs text-cyan-655 font-bold dark:text-cyan-400 hover:underline">
+              Browse Local Events &rarr;
+            </button>
+          </div>
+
+          <div *ngIf="myEventBookings.length > 0" class="space-y-4 max-h-[500px] overflow-y-auto pr-1">
+            <div *ngFor="let t of myEventBookings" 
+                 class="relative bg-white dark:bg-slate-800 border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl p-5 shadow-sm overflow-hidden flex flex-col justify-between sm:flex-row items-center gap-4 hover:shadow-md transition-all duration-200">
+              
+              <!-- Ticket Info -->
+              <div class="space-y-2 flex-1 w-full text-left">
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-950/30 dark:text-purple-400">
+                    {{ t.eventCategory }} Pass
+                  </span>
+                  <span class="text-[9px] font-mono text-gray-400 dark:text-gray-500">REF: #IQ-{{ t.eventId | uppercase | slice:0:6 }}-{{ t.bookedAt | date:'HHmm' }}</span>
+                </div>
+                
+                <h4 class="text-sm font-extrabold text-gray-800 dark:text-white mt-1 leading-snug">
+                  {{ t.eventName }}
+                </h4>
+                
+                <div class="grid grid-cols-2 gap-2 text-[10px] text-gray-500 mt-2">
+                  <div>
+                    <p class="text-[8px] uppercase font-bold text-gray-405">Date & Time</p>
+                    <p class="font-semibold text-gray-700 dark:text-gray-300">{{ t.eventDate | date:'mediumDate' }} at 9:00 AM</p>
+                  </div>
+                  <div>
+                    <p class="text-[8px] uppercase font-bold text-gray-405">Venue</p>
+                    <p class="font-semibold text-gray-700 dark:text-gray-300 text-ellipsis overflow-hidden whitespace-nowrap">{{ t.eventLocation }}</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Barcode / Perforation Split -->
+              <div class="hidden sm:block border-l-2 border-dashed border-gray-250 dark:border-slate-700 h-20 mx-2"></div>
+
+              <!-- Ticket Code & Verification QR -->
+              <div class="flex flex-col items-center justify-center shrink-0 w-20">
+                <div class="w-14 h-14 bg-gray-50 dark:bg-slate-900 border border-gray-150 dark:border-slate-750 rounded flex items-center justify-center p-1">
+                  <i class="fas fa-qrcode text-gray-800 dark:text-gray-200 text-2xl"></i>
+                </div>
+                <span class="text-[8px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest mt-2 flex items-center gap-1">
+                  <i class="fas fa-check-circle text-[9px]"></i> Active
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Exploration View (Not Logged In OR Explicitly Exploring) -->
+    <div *ngIf="!isLoggedIn || exploring" class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      
+      <!-- Left Column: Map & Lodges Selection -->
+      <section class="lg:col-span-3 space-y-6">
+        <!-- Title -->
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">Explore & Book Lodges in Kenya</h1>
+          <p class="text-xs text-gray-500 mt-1 dark:text-gray-400">Find the best properties and local dining or conferences surrounding you.</p>
+        </div>
+
+        <!-- Proximity Map container -->
+        <div class="h-[400px] w-full rounded-2xl overflow-hidden shadow-inner border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3">
+          <app-map [latitude]="mapLatitude" 
+                   [longitude]="mapLongitude" 
+                   [markerLabel]="mapLabel" 
+                   [events]="mapEvents" 
+                   [radiusKm]="100" 
+                   [isPicker]="false"></app-map>
+        </div>
+
+        <!-- Section Switch Tabs -->
+        <div class="flex gap-2 border-b border-gray-200 dark:border-slate-700 pb-3">
+          <button (click)="activeTab = 'lodges'" 
+                  [class]="activeTab === 'lodges' ? 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold' : 'bg-gray-100 hover:bg-gray-200 text-gray-605 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'"
+                  class="px-4 py-2 text-xs rounded-xl shadow-sm transition-all duration-200 flex items-center gap-1.5 outline-none">
+            <i class="fas fa-hotel"></i> Available Lodges
+          </button>
+          <button (click)="activeTab = 'events'" 
+                  [class]="activeTab === 'events' ? 'bg-cyan-600 hover:bg-cyan-700 text-white font-bold' : 'bg-gray-100 hover:bg-gray-200 text-gray-605 dark:bg-slate-800 dark:text-gray-300 dark:hover:bg-slate-700'"
+                  class="px-4 py-2 text-xs rounded-xl shadow-sm transition-all duration-200 flex items-center gap-1.5 outline-none">
+            <i class="fas fa-calendar-alt"></i> Events & Dining Nearby
+          </button>
+        </div>
+
+        <!-- Lodges Cards List Tab Content -->
+        <div *ngIf="activeTab === 'lodges'" class="space-y-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div *ngFor="let prop of properties" 
+                 (click)="selectProperty(prop)"
+                 class="cursor-pointer border p-4 rounded-xl shadow-sm hover:shadow transition-all duration-200 flex flex-col justify-between"
+                 [ngClass]="selectedProperty?.id === prop.id ? 'border-cyan-500 bg-cyan-55/20 dark:bg-cyan-950/15' : 'border-gray-200 bg-white dark:border-slate-700 dark:bg-slate-800'">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-cyan-100 text-cyan-600 dark:bg-cyan-900/30 dark:text-cyan-400">
+                    <i class="fas fa-map-pin text-xs"></i>
+                  </span>
+                  <h3 class="font-bold text-gray-800 dark:text-gray-150">{{ prop.name }}</h3>
+                </div>
+                <p class="text-xs text-gray-550 mt-1.5 dark:text-gray-400">
+                  {{ prop.address }}, {{ prop.town }}, {{ prop.county }} County
+                </p>
+              </div>
+              <div class="mt-4 pt-2 border-t border-gray-100 dark:border-slate-700/50 flex items-center justify-between text-[11px] text-gray-400">
+                <span><i class="fas fa-phone-alt"></i> {{ prop.contactPhone }}</span>
+                <span class="text-cyan-600 font-semibold dark:text-cyan-400">Browse Rooms →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Events & Dining Attractions Nearby Tab Content -->
+        <div *ngIf="activeTab === 'events'" class="space-y-4">
+          <div *ngIf="mapEvents.length === 0" class="text-xs text-gray-400 italic py-4">
+            No events or restaurants found near this location.
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4" *ngIf="mapEvents.length > 0">
+            <div *ngFor="let event of mapEvents" 
+                 class="border p-4 rounded-xl shadow-sm bg-white dark:bg-slate-800 dark:border-slate-700 flex flex-col justify-between hover:shadow-md transition-all duration-200">
+              <div>
+                <div class="flex items-center justify-between gap-2">
+                  <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[9px] font-semibold tracking-wider uppercase"
+                        [ngClass]="{
+                          'bg-red-50 text-red-700 dark:bg-red-950/30 dark:text-red-400': event.category === 'public-holiday',
+                          'bg-blue-50 text-blue-700 dark:bg-blue-950/30 dark:text-blue-400': event.category === 'conference',
+                          'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400': event.category === 'wildlife-season',
+                          'bg-pink-50 text-pink-700 dark:bg-pink-955/20 dark:text-pink-400': event.category === 'restaurant',
+                          'bg-amber-50 text-amber-700 dark:bg-amber-950/30 dark:text-amber-400': event.category !== 'public-holiday' && event.category !== 'conference' && event.category !== 'wildlife-season' && event.category !== 'restaurant'
+                        }">
+                    <i class="fas" [ngClass]="{
+                      'fa-calendar-day': event.category === 'public-holiday',
+                      'fa-handshake': event.category === 'conference',
+                      'fa-hippo': event.category === 'wildlife-season',
+                      'fa-utensils': event.category === 'restaurant',
+                      'fa-star': event.category !== 'public-holiday' && event.category !== 'conference' && event.category !== 'wildlife-season' && event.category !== 'restaurant'
+                    }"></i>
+                    {{ event.category }}
+                  </span>
+                  
+                  <span *ngIf="event.distanceKm" class="text-[10px] text-gray-400 font-medium">
+                    <i class="fas fa-location-arrow text-[8px]"></i> {{ event.distanceKm | number:'1.0-1' }} km away
+                  </span>
+                </div>
+                
+                <h3 class="font-bold text-gray-805 dark:text-gray-150 mt-2 text-sm">{{ event.name }}</h3>
+                <p class="text-xs text-gray-550 mt-1 dark:text-gray-400 line-clamp-2 leading-relaxed">
+                  {{ event.description }}
+                </p>
+              </div>
+              
+              <div class="mt-4 pt-2 border-t border-gray-150 dark:border-slate-700/50 flex items-center justify-between text-[11px]">
+                <span class="text-gray-400">
+                  <i class="far fa-calendar mr-1"></i> {{ event.startDate | date:'mediumDate' }}
+                </span>
+                
+                <button *ngIf="event.category !== 'public-holiday'" 
+                        (click)="onBookTicket({ detail: event.id || event._id })"
+                        class="text-cyan-600 font-bold dark:text-cyan-400 hover:underline">
+                  {{ event.category === 'restaurant' ? 'Reserve Table →' : 'Book Ticket →' }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Booking panel -->
+      <section class="lg:col-span-2 space-y-6">
+        <div class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden flex flex-col">
+          <!-- Selected Property Title -->
+          <div class="bg-cyan-50 px-5 py-4 border-b border-cyan-100 dark:bg-slate-900/40 dark:border-slate-700/60">
+            <p class="text-[10px] font-bold text-cyan-705 dark:text-cyan-455 uppercase tracking-widest">Select Lodge & Room</p>
+            <h2 class="text-lg font-bold text-gray-955 dark:text-gray-155 mt-0.5">{{ selectedProperty?.name }}</h2>
+          </div>
+
+          <!-- Room Selector (Horizontal Chips) -->
+          <div class="p-5 border-b border-gray-150 dark:border-slate-700/60">
+            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Available Rooms</label>
+            <div *ngIf="loadingRooms" class="text-xs text-gray-500 italic flex items-center gap-1.5"><i class="fas fa-spinner fa-spin"></i> Loading rooms...</div>
+            <div *ngIf="!loadingRooms && rooms.length === 0" class="text-xs text-amber-600 dark:text-amber-450 italic">No active rooms found for this property.</div>
+            
+            <div class="flex gap-2.5 overflow-x-auto pb-2 scrollbar-none" *ngIf="!loadingRooms && rooms.length > 0">
+              <button *ngFor="let room of rooms" 
+                      (click)="selectRoom(room)"
+                      [class]="selectedRoom?._id === room._id ? 'border-cyan-500 bg-cyan-55/20 text-cyan-750 dark:bg-cyan-950/20 dark:text-cyan-400' : 'border-gray-200 hover:border-gray-300 dark:border-slate-700 dark:text-gray-300'"
+                      class="px-4 py-2 border rounded-xl text-xs font-bold transition-all shrink-0 flex flex-col items-start gap-0.5 text-left min-w-[100px]">
+                <span class="text-[10px] opacity-70">Room {{ room.roomNumber }}</span>
+                <span class="text-xs mt-0.5">{{ room.roomType }}</span>
+                <span class="text-[10px] font-black text-cyan-650 dark:text-cyan-400 mt-1">KES {{ room.basePrice | number }}/night</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Dynamic Guest Card: Either auth forms or booking submission form -->
+          <div class="p-5 flex-1">
+            
+            <!-- Auth Form Card (if not logged in) -->
+            <div *ngIf="!isLoggedIn" class="space-y-4">
+              <div class="bg-cyan-50/50 dark:bg-slate-900/50 p-4 rounded-xl border border-cyan-100 dark:border-slate-800 text-xs">
+                <span class="font-bold text-cyan-800 dark:text-cyan-400">👋 Welcome, Guest!</span>
+                <p class="text-gray-605 mt-1 leading-relaxed dark:text-gray-400">Please sign in or create an instant guest account to choose a room and book your stay.</p>
+              </div>
+
+              <!-- Auth Mode Toggles -->
+              <div class="flex gap-4 border-b border-gray-150 dark:border-slate-700 pb-2.5 justify-center">
+                <button (click)="authMode = 'signin'; authError = ''" 
+                        [class]="authMode === 'signin' ? 'text-xs font-black text-cyan-600 border-b-2 border-cyan-600 pb-1' : 'text-xs text-gray-450 hover:text-gray-650 pb-1'">
+                  Sign In
+                </button>
+                <button (click)="authMode = 'signup'; authError = ''" 
+                        [class]="authMode === 'signup' ? 'text-xs font-black text-cyan-600 border-b-2 border-cyan-600 pb-1' : 'text-xs text-gray-455 hover:text-gray-650 pb-1'">
+                  Create Account
+                </button>
+              </div>
+
+              <div *ngIf="authMode === 'signup'" class="space-y-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-450 uppercase mb-1">Full Name</label>
+                  <input type="text" [(ngModel)]="authName" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="Mwangi Kamau" />
+                </div>
+              </div>
+
+              <div class="space-y-3">
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-455 uppercase mb-1">Email Address</label>
+                  <input type="email" [(ngModel)]="authEmail" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="mwangi@gmail.com" />
+                </div>
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-455 uppercase mb-1">Password</label>
+                  <input type="password" [(ngModel)]="authPassword" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="Minimum 6 characters" />
+                </div>
+                <button (click)="submitAuth()" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs py-2.5 rounded-lg transition-all shadow mt-2">
+                  {{ authMode === 'signin' ? 'Sign In' : 'Create Account' }}
+                </button>
+              </div>
+              
+              <div *ngIf="authError" class="text-xs text-red-500 mt-2 font-medium">{{ authError }}</div>
+              <div class="text-[10px] text-gray-400 mt-3 pt-2 border-t border-gray-150 dark:border-slate-800 text-left">
+                Tip: You can use the seeded guest credentials:<br>
+                <strong>Email:</strong> guest&#64;hoteliqkenya.co.ke <br>
+                <strong>Password:</strong> Guest&#64;123
+              </div>
+            </div>
+
+            <!-- Logged In Guest Booking Form -->
+            <div *ngIf="isLoggedIn" class="space-y-5">
+              <!-- User Welcome & Logout -->
+              <div class="flex items-center justify-between bg-cyan-55/20 dark:bg-slate-900/50 px-4 py-2.5 rounded-xl border border-cyan-100/50 dark:border-slate-700 text-xs">
+                <span class="font-bold text-cyan-800 dark:text-cyan-400">Authenticated: {{ currentUser?.name }}</span>
+                <button (click)="logoutGuest()" class="text-red-500 hover:text-red-655 font-bold">Logout</button>
+              </div>
+
+              <form [formGroup]="bookingForm" class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[10px] font-bold text-gray-450 uppercase mb-1">Check-in</label>
+                    <input type="date" formControlName="checkIn" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+                  </div>
+                  <div>
+                    <label class="block text-[10px] font-bold text-gray-455 uppercase mb-1">Check-out</label>
+                    <input type="date" formControlName="checkOut" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-450 uppercase mb-1">Guest Name</label>
+                  <input type="text" formControlName="guestName" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+                </div>
+
+                <div>
+                  <label class="block text-[10px] font-bold text-gray-450 uppercase mb-1">M-Pesa Phone Number</label>
+                  <input type="text" formControlName="guestPhone" placeholder="e.g. 0712345678" class="w-full px-3 py-2 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" />
+                  <span class="text-[9px] text-gray-400 block mt-0.5">Enter a valid Kenyan number (07... or 01... or +254...)</span>
+                </div>
+
+                <!-- Price Summary -->
+                <div *ngIf="selectedRoom" class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800 text-xs space-y-1.5">
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Rate:</span>
+                    <span class="font-semibold">KES {{ selectedRoom.basePrice | number }} / night</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500">Nights:</span>
+                    <span class="font-semibold">{{ nightsCount }}</span>
+                  </div>
+                  <div class="flex justify-between border-t border-gray-150 dark:border-slate-700 pt-1.5">
+                    <span class="font-bold text-gray-900 dark:text-gray-100">Total Price:</span>
+                    <span class="font-black text-cyan-650 dark:text-cyan-400 text-sm">KES {{ totalCost | number }}</span>
+                  </div>
+                </div>
+
+                <button (click)="triggerBookingFlow()" 
+                        [disabled]="bookingForm.invalid || !selectedRoom"
+                        class="w-full bg-cyan-655 hover:bg-cyan-700 text-white font-bold text-sm py-3 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50">
+                  <i class="fas fa-mobile-alt"></i> Pay & Book with M-Pesa
+                </button>
+              </form>
+            </div>
+            
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- M-Pesa Payment Simulation Modal -->
+  <div *ngIf="showPaymentModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white shadow-xl dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 flex flex-col items-center">
+      
+      <!-- Simulating State -->
+      <div *ngIf="simulatingPayment" class="flex flex-col items-center py-6">
+        <div class="w-14 h-14 rounded-full bg-cyan-55 dark:bg-cyan-900/20 flex items-center justify-center mb-4">
+          <i class="fas fa-spinner fa-spin text-cyan-650 dark:text-cyan-400 text-2xl"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-center">Simulating M-Pesa Push</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2 px-4 leading-relaxed">
+          Sending STK Push to <strong class="text-cyan-650">{{ paymentPhone }}</strong>. Please check your phone to enter your M-Pesa PIN.
+        </p>
+      </div>
+
+      <!-- Success State -->
+      <div *ngIf="paymentSuccess" class="flex flex-col items-center py-6">
+        <div class="w-14 h-14 rounded-full bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400 text-2xl mb-4">
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <h3 class="font-bold text-gray-900 dark:text-gray-100 text-center">Payment Confirmed</h3>
+        <p class="text-xs text-gray-500 dark:text-gray-400 text-center mt-2 leading-relaxed">
+          KES {{ totalCost | number }} received successfully from M-Pesa. Your room booking is being confirmed...
+        </p>
+      </div>
+
+      <button (click)="closePaymentModal()" 
+              [disabled]="simulatingPayment"
+              class="mt-4 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs px-4 py-2 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600 disabled:opacity-30">
+        Close
+      </button>
+    </div>
+  </div>
+
+  <!-- Simulated Event Ticket Booking modal -->
+  <div *ngIf="showTicketModal" class="fixed inset-0 z-[9999] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+    <div class="w-full max-w-sm rounded-2xl bg-white shadow-xl dark:bg-slate-800 border border-gray-100 dark:border-slate-700 p-6 flex flex-col items-center">
+      <div class="w-12 h-12 rounded-full bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center text-cyan-600 text-xl mb-4">
+        <i class="fas" [ngClass]="selectedEventToBook?.category === 'restaurant' ? 'fa-utensils' : 'fa-ticket-alt'"></i>
+      </div>
+      <h3 class="font-bold text-lg text-gray-900 dark:text-gray-150">
+        {{ selectedEventToBook?.category === 'restaurant' ? 'Reserve Table' : 'Book Ticket' }}
+      </h3>
+      <p class="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-4 text-center">
+        You are booking for <strong>{{ selectedEventToBook?.name }}</strong>.<br>
+        Date: {{ selectedEventToBook?.startDate | date:'mediumDate' }}
+      </p>
+
+      <!-- If not logged in, request login first -->
+      <div *ngIf="!isLoggedIn" class="w-full space-y-3 bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-200 dark:border-slate-700 text-left mb-4">
+        <p class="text-[10px] text-amber-600 dark:text-amber-450 font-semibold mb-2 text-center">⚠️ Sign in or Sign up to reserve/book</p>
+        
+        <div class="flex gap-2 justify-center border-b border-gray-250 dark:border-slate-750 pb-2 mb-2">
+          <button (click)="authMode = 'signin'; authError = ''" [class]="authMode === 'signin' ? 'text-[11px] font-bold text-cyan-600 border-b-2 border-cyan-600 pb-0.5' : 'text-[11px] text-gray-400 hover:text-gray-650 pb-0.5'">Sign In</button>
+          <button (click)="authMode = 'signup'; authError = ''" [class]="authMode === 'signup' ? 'text-[11px] font-bold text-cyan-600 border-b-2 border-cyan-600 pb-0.5' : 'text-[11px] text-gray-400 hover:text-gray-650 pb-0.5'">Sign Up</button>
+        </div>
+
+        <div *ngIf="authMode === 'signin'" class="space-y-2">
+          <input type="email" [(ngModel)]="authEmail" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="guest&#64;hoteliqkenya.co.ke" />
+          <input type="password" [(ngModel)]="authPassword" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="••••••••" />
+          <button (click)="submitAuth(true)" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs py-2 rounded-lg transition-all shadow">Sign In & Continue</button>
+        </div>
+
+        <div *ngIf="authMode === 'signup'" class="space-y-2">
+          <input type="text" [(ngModel)]="authName" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="Mwangi Kamau" />
+          <input type="email" [(ngModel)]="authEmail" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="mwangi@gmail.com" />
+          <input type="password" [(ngModel)]="authPassword" class="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none dark:border-slate-700 dark:bg-slate-900 dark:text-gray-100" placeholder="Minimum 6 characters" />
+          <button (click)="submitAuth(true)" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-xs py-2 rounded-lg transition-all shadow">Sign Up & Continue</button>
+        </div>
+        
+        <div *ngIf="authError" class="text-[10px] text-red-500 text-center mt-1">{{ authError }}</div>
+      </div>
+
+      <!-- If logged in, show final booking details -->
+      <div *ngIf="isLoggedIn" class="w-full space-y-4">
+        <div class="bg-gray-50 dark:bg-slate-900/50 p-4 rounded-xl border border-gray-100 dark:border-slate-800 text-xs w-full text-left space-y-1.5">
+          <div class="flex justify-between">
+            <span class="text-gray-500">Attendee:</span>
+            <span class="font-bold text-gray-800 dark:text-gray-250">{{ currentUser?.name }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Email:</span>
+            <span class="font-bold text-gray-800 dark:text-gray-250">{{ currentUser?.email }}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-gray-500">Selection:</span>
+            <span class="font-bold text-gray-800 dark:text-gray-250">
+              {{ selectedEventToBook?.category === 'restaurant' ? 'Table Reservation' : 'Event Entry Pass' }}
+            </span>
+          </div>
+          <div class="flex justify-between border-t border-gray-150 dark:border-slate-700 pt-1.5">
+            <span class="font-semibold text-gray-900 dark:text-gray-100">Price:</span>
+            <span class="font-bold text-emerald-600 dark:text-emerald-450">FREE / Included</span>
+          </div>
+        </div>
+
+        <button (click)="confirmEventTicket()" 
+                class="w-full bg-cyan-600 hover:bg-cyan-700 text-white font-bold text-sm py-2.5 rounded-xl transition-all shadow">
+          {{ selectedEventToBook?.category === 'restaurant' ? 'Confirm Reservation' : 'Confirm Ticket Booking' }}
+        </button>
+      </div>
+
+      <button (click)="closeTicketModal()" 
+              class="mt-4 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 text-xs px-4 py-2 dark:bg-slate-700 dark:text-gray-300 dark:hover:bg-slate-600">
+        Close
+      </button>
+    </div>
+  </div>
+</div>

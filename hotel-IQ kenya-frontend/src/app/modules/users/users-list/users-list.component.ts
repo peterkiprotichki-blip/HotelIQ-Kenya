@@ -53,8 +53,11 @@ export class UsersListComponent implements OnInit {
   selectedUserForPermissions: BomoproUser | null = null;
   organizations: Tenant[] = [];
   roleOptions: RoleOption[] = [
-    { value: 'admin', label: 'Admin (Coordinator)' },
-    { value: 'agent', label: 'Field Agent' },
+    { value: 'super_admin', label: 'Super Admin' },
+    { value: 'admin', label: 'Admin' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'agent', label: 'Staff' },
+    { value: 'tenant', label: 'Guest' },
   ];
   permissionsData: PermissionsResponse | null = null;
   permissionDraft: string[] = [];
@@ -236,19 +239,34 @@ export class UsersListComponent implements OnInit {
 
   getRoleClasses(role: string): string {
     const map: Record<string, string> = {
+      super_admin: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
       admin: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+      manager: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
       agent: 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400',
+      tenant: 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-200',
     };
     return map[role] || 'bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-gray-200';
   }
 
   getRoleLabel(role: string): string {
+    if (role === 'super_admin') {
+      return 'Super Admin';
+    }
+
     if (role === 'admin') {
-      return 'Admin (Coordinator)';
+      return 'Admin';
+    }
+
+    if (role === 'manager') {
+      return 'Manager';
     }
 
     if (role === 'agent') {
-      return 'Field Agent';
+      return 'Staff';
+    }
+
+    if (role === 'tenant') {
+      return 'Guest';
     }
 
     return role.replace('_', ' ');
@@ -323,8 +341,9 @@ export class UsersListComponent implements OnInit {
   }
 
   private normalizeRole(role: string): UserRole {
-    if (role === 'admin' || role === 'agent') {
-      return role;
+    const validRoles: UserRole[] = ['super_admin', 'admin', 'manager', 'agent', 'tenant'];
+    if (validRoles.includes(role as UserRole)) {
+      return role as UserRole;
     }
 
     return 'agent';

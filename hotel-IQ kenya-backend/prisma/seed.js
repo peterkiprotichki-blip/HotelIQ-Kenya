@@ -17,14 +17,14 @@ const defaultUsers = [
     role: 'admin',
   },
   {
-    name: 'Receptionist Agent',
+    name: 'Hotel Staff',
     email: 'agent@hoteliqkenya.co.ke',
     password: 'Agent@123',
     role: 'agent',
     permissions: ['view_dashboard', 'view_properties', 'edit_properties'],
   },
   {
-    name: 'Normal User Guest',
+    name: 'Guest User',
     email: 'guest@hoteliqkenya.co.ke',
     password: 'Guest@123',
     role: 'tenant',
@@ -426,12 +426,12 @@ async function main() {
     console.log(`Seeded default bookings for property: ${property.name}`);
   }
 
-  // 4. Link receptionist to the first property
-  const receptionist = userMap['agent@hoteliqkenya.co.ke'];
+  // 4. Link staff user to the first property
+  const staffUser = userMap['agent@hoteliqkenya.co.ke'];
   const firstProperty = propertyMap['Mombasa Ocean Breeze Lodge'];
-  if (receptionist && firstProperty) {
+  if (staffUser && firstProperty) {
     await prisma.user.update({
-      where: { id: receptionist.id },
+      where: { id: staffUser.id },
       data: {
         tenantIds: [firstProperty.id],
         activeTenantId: firstProperty.id,

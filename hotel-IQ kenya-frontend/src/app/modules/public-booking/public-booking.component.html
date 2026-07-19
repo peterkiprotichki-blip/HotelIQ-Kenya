@@ -232,9 +232,14 @@
           <app-map [latitude]="mapLatitude" 
                    [longitude]="mapLongitude" 
                    [markerLabel]="mapLabel" 
-                   [events]="mapEvents" 
+                   [events]="mapEvents"
+                   [properties]="properties"
+                   [selectedPropertyId]="selectedProperty?.id || selectedProperty?._id || null"
+                   [userLat]="userLat"
+                   [userLng]="userLng"
                    [radiusKm]="100" 
-                   [isPicker]="false"></app-map>
+                   [isPicker]="false"
+                   (locationReady)="onLocationReady($event)"></app-map>
         </div>
 
         <!-- Section Switch Tabs -->
@@ -267,6 +272,9 @@
                 </div>
                 <p class="text-xs text-gray-550 mt-1.5 dark:text-gray-400">
                   {{ prop.address }}, {{ prop.town }}, {{ prop.county }} County
+                </p>
+                <p *ngIf="userLat != null && userLng != null" class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold mt-1">
+                  <i class="fas fa-location-arrow text-[10px]"></i> {{ getDistanceKm(userLat, userLng, prop.latitude, prop.longitude) | number:'1.0-0' }} km from you
                 </p>
               </div>
               <div class="mt-4 pt-2 border-t border-gray-100 dark:border-slate-700/50 flex items-center justify-between text-[11px] text-gray-400">
@@ -306,8 +314,8 @@
                     {{ event.category }}
                   </span>
                   
-                  <span *ngIf="event.distanceKm" class="text-[10px] text-gray-400 font-medium">
-                    <i class="fas fa-location-arrow text-[8px]"></i> {{ event.distanceKm | number:'1.0-1' }} km away
+                  <span *ngIf="userLat != null && userLng != null && event.latitude != null" class="text-[10px] text-gray-400 font-medium">
+                    <i class="fas fa-location-arrow text-[8px]"></i> {{ getDistanceKm(userLat, userLng, event.latitude, event.longitude) | number:'1.0-0' }} km away
                   </span>
                 </div>
                 
@@ -340,6 +348,43 @@
           <div class="bg-cyan-50 px-5 py-4 border-b border-cyan-100 dark:bg-slate-900/40 dark:border-slate-700/60">
             <p class="text-[10px] font-bold text-cyan-705 dark:text-cyan-455 uppercase tracking-widest">Select Lodge & Room</p>
             <h2 class="text-lg font-bold text-gray-955 dark:text-gray-155 mt-0.5">{{ selectedProperty?.name }}</h2>
+          </div>
+
+          <!-- Lodge Images Gallery -->
+          <div *ngIf="selectedProperty" class="px-5 py-4 border-b border-gray-150 dark:border-slate-700/60">
+            <div class="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+              <img *ngFor="let img of getLodgeImages(selectedProperty); let i = index"
+                   [src]="img"
+                   [alt]="selectedProperty.name + ' image ' + (i + 1)"
+                   class="w-28 h-20 object-cover rounded-lg flex-shrink-0 border border-gray-200 dark:border-slate-600 hover:scale-105 transition-transform cursor-pointer bg-gray-100 dark:bg-slate-700"
+                   (click)="expandedImage = img"
+                   (error)="onImageError($event)" />
+            </div>
+          </div>
+
+          <!-- Reviews & Ratings -->
+          <div *ngIf="selectedProperty" class="px-5 py-4 border-b border-gray-150 dark:border-slate-700/60">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="text-lg font-black text-amber-500">{{ getLodgeRating(selectedProperty) }}</span>
+                <div class="flex">
+                  <i *ngFor="let s of getStars(getLodgeRating(selectedProperty))" class="fas fa-star text-amber-400 text-xs"></i>
+                  <i *ngFor="let s of getEmptyStars(getLodgeRating(selectedProperty))" class="far fa-star text-amber-400 text-xs"></i>
+                </div>
+              </div>
+              <span class="text-[11px] text-gray-400">{{ getLodgeReviews(selectedProperty).length }} reviews</span>
+            </div>
+            <div class="space-y-2.5 max-h-32 overflow-y-auto pr-1">
+              <div *ngFor="let review of getLodgeReviews(selectedProperty).slice(0, 3)" class="border-l-2 border-cyan-200 dark:border-cyan-800 pl-3">
+                <div class="flex items-center gap-1.5 mb-0.5">
+                  <span class="text-[10px] font-bold text-gray-700 dark:text-gray-300">{{ review.author }}</span>
+                  <div class="flex">
+                    <i *ngFor="let s of [].constructor(review.rating)" class="fas fa-star text-amber-400 text-[8px]"></i>
+                  </div>
+                </div>
+                <p class="text-[11px] text-gray-550 dark:text-gray-400 leading-relaxed">{{ review.text }}</p>
+              </div>
+            </div>
           </div>
 
           <!-- Room Selector (Horizontal Chips) -->
@@ -404,11 +449,6 @@
               </div>
               
               <div *ngIf="authError" class="text-xs text-red-500 mt-2 font-medium">{{ authError }}</div>
-              <div class="text-[10px] text-gray-400 mt-3 pt-2 border-t border-gray-150 dark:border-slate-800 text-left">
-                Tip: You can use the seeded guest credentials:<br>
-                <strong>Email:</strong> guest&#64;hoteliqkenya.co.ke <br>
-                <strong>Password:</strong> Guest&#64;123
-              </div>
             </div>
 
             <!-- Logged In Guest Booking Form -->
@@ -582,4 +622,20 @@
       </button>
     </div>
   </div>
+
+  <!-- Image Lightbox -->
+  <div *ngIf="expandedImage" class="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" (click)="expandedImage = null">
+    <img [src]="expandedImage" class="max-w-[90vw] max-h-[85vh] rounded-xl shadow-2xl object-contain" />
+    <button (click)="expandedImage = null" class="absolute top-4 right-4 text-white text-2xl hover:opacity-70">
+      <i class="fas fa-times"></i>
+    </button>
+  </div>
+
+  <app-chatbot-widget
+    [propertyId]="selectedProperty?.id || null"
+    [checkIn]="bookingForm.value.checkIn"
+    [checkOut]="bookingForm.value.checkOut"
+    [userLat]="userLat"
+    [userLng]="userLng">
+  </app-chatbot-widget>
 </div>

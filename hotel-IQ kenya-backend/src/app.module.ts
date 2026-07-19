@@ -10,6 +10,7 @@ import { EventsModule } from './modules/events/events.module';
 import { MapModule } from './modules/map/map.module';
 import { PricingAiModule } from './modules/pricing-ai/pricing-ai.module';
 import { PublicModule } from './modules/public/public.module';
+import { ChatbotModule } from './modules/chatbot/chatbot.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PublicModule } from './modules/public/public.module';
     MapModule,
     PricingAiModule,
     PublicModule,
+    ChatbotModule,
   ],
 })
 export class AppModule {}

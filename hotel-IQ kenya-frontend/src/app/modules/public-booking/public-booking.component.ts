@@ -5,12 +5,13 @@ import { PublicService, PublicProperty, PublicRoom } from '../../shared/services
 import { ThemeService } from '../../shared/services/theme/theme.service';
 import { NotificationService } from '../../shared/services/notification.service';
 import { MapComponent } from '../../shared/components/map/map.component';
+import { ChatbotWidgetComponent } from '../../shared/components/chatbot-widget/chatbot-widget.component';
 import { AuthService } from '../../shared/services/auth/auth.service';
 
 @Component({
   selector: 'app-public-booking',
   standalone: true,
-  imports: [CommonModule, FormsModule, ReactiveFormsModule, MapComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, MapComponent, ChatbotWidgetComponent],
   templateUrl: './public-booking.component.html',
 })
 export class PublicBookingComponent implements OnInit {
@@ -33,7 +34,9 @@ export class PublicBookingComponent implements OnInit {
   mapLatitude = 0.5143; // Eldoret Default
   mapLongitude = 35.2698;
   mapLabel = 'Lodges Map';
-  mapEvents: any[] = []; 
+  mapEvents: any[] = [];
+  userLat: number | null = null;
+  userLng: number | null = null;
 
   // Auth fields
   authMode: 'signin' | 'signup' = 'signin';
@@ -93,9 +96,9 @@ export class PublicBookingComponent implements OnInit {
     this.publicService.getProperties().subscribe({
       next: (props) => {
         this.properties = props.sort((a, b) => {
-          if (a.town === 'Eldoret' && b.town !== 'Eldoret') return -1;
-          if (a.town !== 'Eldoret' && b.town === 'Eldoret') return 1;
-          return 0;
+          const distA = this.getDistanceKm(this.userLat ?? a.latitude, this.userLng ?? a.longitude, a.latitude, a.longitude);
+          const distB = this.getDistanceKm(this.userLat ?? b.latitude, this.userLng ?? b.longitude, b.latitude, b.longitude);
+          return distA - distB;
         });
         this.loadingProps = false;
         if (this.properties.length > 0) {
@@ -106,6 +109,27 @@ export class PublicBookingComponent implements OnInit {
         this.loadingProps = false;
       }
     });
+  }
+
+  onLocationReady(coords: { lat: number; lng: number }): void {
+    this.userLat = coords.lat;
+    this.userLng = coords.lng;
+    this.mapLatitude = coords.lat;
+    this.mapLongitude = coords.lng;
+    this.mapLabel = 'Your Location';
+    this.loadNearbyEvents(coords.lat, coords.lng);
+  }
+
+  getDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = ((lat2 - lat1) * Math.PI) / 180;
+    const dLng = ((lng2 - lng1) * Math.PI) / 180;
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
   }
 
   selectProperty(prop: PublicProperty): void {
@@ -243,7 +267,7 @@ export class PublicBookingComponent implements OnInit {
           this.authEmail = '';
           this.authPassword = '';
           this.notificationService.success('Logged in successfully!');
-          // Populate name into guestName automatically
+          this.exploring = true;
           this.bookingForm.patchValue({
             guestName: res.user.name,
             guestEmail: res.user.email
@@ -266,6 +290,7 @@ export class PublicBookingComponent implements OnInit {
           this.authPassword = '';
           this.authName = '';
           this.notificationService.success('Account created and logged in!');
+          this.exploring = true;
           this.bookingForm.patchValue({
             guestName: res.user.name,
             guestEmail: res.user.email
@@ -295,6 +320,16 @@ export class PublicBookingComponent implements OnInit {
       this.selectedEventToBook = evt;
       this.showTicketModal = true;
       this.authError = '';
+    }
+  }
+
+  @HostListener('window:selectProperty', ['$event'])
+  onSelectPropertyFromMap(event: any): void {
+    const propId = event.detail;
+    const prop = this.properties.find(p => p.id === propId || p._id === propId);
+    if (prop) {
+      this.selectProperty(prop);
+      document.getElementById('lodges-section')?.scrollIntoView({ behavior: 'smooth' });
     }
   }
 
@@ -338,7 +373,7 @@ export class PublicBookingComponent implements OnInit {
         this.myEventBookings = bookings.map((b: any) => ({
           eventId: b.eventId,
           userEmail: b.guestEmail,
-          eventName: b.event?.name || 'Local Event',
+           eventName: b.event?.name || 'Local Event',
           eventCategory: b.event?.category || 'festival',
           eventDate: b.event?.startDate || b.bookedAt,
           eventLocation: b.event ? `${b.event.town}, ${b.event.county}` : 'Eldoret',
@@ -349,5 +384,73 @@ export class PublicBookingComponent implements OnInit {
         this.myEventBookings = [];
       }
     });
+  }
+
+  expandedImage: string | null = null;
+
+  private lodgeReviews: Record<string, Array<{ author: string; rating: number; text: string }>> = {
+    'Mombasa Ocean Breeze Lodge': [
+      { author: 'Jane M.', rating: 5, text: 'Beautiful beachfront lodge with stunning views. The staff were incredibly welcoming and the rooms spotless.' },
+      { author: 'David K.', rating: 4, text: 'Great location right on Nyali Beach. Delicious seafood at the restaurant. Will definitely come back.' },
+      { author: 'Sarah W.', rating: 5, text: 'Perfect family getaway. The Executive Suite with the jacuzzi was worth every shilling. Highly recommended!' },
+      { author: 'Tom O.', rating: 4, text: 'Excellent value for a beachside lodge. Clean rooms, good food, and friendly service.' },
+    ],
+    'Eldoret Sirikwa Hotel': [
+      { author: 'Peter C.', rating: 4, text: 'Classic Eldoret hotel with great character. Perfect base for exploring the Rift Valley.' },
+      { author: 'Mercy A.', rating: 5, text: 'Outstanding hospitality! The staff went above and beyond. Great for business travelers.' },
+      { author: 'James N.', rating: 4, text: 'Convenient location on Elgeyo Road. Comfortable rooms and good value for money.' },
+    ],
+    'The Boma Inn Eldoret': [
+      { author: 'Lucy K.', rating: 5, text: 'Gorgeous hotel in Elgon View. The gardens are stunning and the rooms are luxurious.' },
+      { author: 'Michael O.', rating: 4, text: 'Peaceful location with great views. The restaurant serves excellent local and international cuisine.' },
+      { author: 'Ann W.', rating: 5, text: 'My favorite place to stay in Eldoret. The Deluxe rooms are spacious and beautifully decorated.' },
+    ],
+    'Eldoret Wagon Hotel': [
+      { author: 'George M.', rating: 4, text: 'Affordable and comfortable. Great for short stays in Eldoret town center.' },
+      { author: 'Faith N.', rating: 4, text: 'Clean rooms, friendly staff, and walking distance to Eldoret town. Good value.' },
+      { author: 'Paul K.', rating: 3, text: 'Decent budget option. Basic but clean. Perfect for a quick overnight stay.' },
+    ],
+  };
+
+  getLodgeImages(property: PublicProperty): string[] {
+    const name = property.name;
+    const hash = this.hashString(name);
+    const ids = [hash % 1084, (hash * 7) % 1084, (hash * 13) % 1084, (hash * 17) % 1084];
+    return ids.map(id => `https://picsum.photos/id/${id}/400/300`);
+  }
+
+  private hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      hash = ((hash << 5) - hash) + str.charCodeAt(i);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
+  getLodgeReviews(property: PublicProperty): Array<{ author: string; rating: number; text: string }> {
+    return this.lodgeReviews[property.name] || [
+      { author: 'Guest', rating: 4, text: 'Comfortable stay with friendly service.' },
+    ];
+  }
+
+  getLodgeRating(property: PublicProperty): number {
+    const reviews = this.getLodgeReviews(property);
+    if (!reviews.length) return 4;
+    const sum = reviews.reduce((s, r) => s + r.rating, 0);
+    return Math.round((sum / reviews.length) * 10) / 10;
+  }
+
+  getStars(rating: number): number[] {
+    return Array(Math.floor(rating)).fill(0);
+  }
+
+  getEmptyStars(rating: number): number[] {
+    return Array(5 - Math.floor(rating)).fill(0);
+  }
+
+  onImageError(event: Event): void {
+    const img = event.target as HTMLImageElement;
+    img.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" fill="%23e2e8f0"><rect width="400" height="300"/><text x="200" y="150" text-anchor="middle" dy=".3em" fill="%2394a3b8" font-size="14">Image not available</text></svg>';
   }
 }
